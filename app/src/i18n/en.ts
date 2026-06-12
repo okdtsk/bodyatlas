@@ -137,6 +137,21 @@ export const en = {
   'settings.targetProtein': 'Protein (g)',
   'settings.targetFat': 'Fat (g)',
   'settings.targetCarbs': 'Carbs (g)',
+  'trends.range.4w': '4w',
+  'trends.range.12w': '12w',
+  'trends.range.6m': '6m',
+  'trends.range.1y': '1y',
+  'trends.strength': 'Strength',
+  'trends.pickExercise': 'Choose an exercise',
+  'trends.topSet': 'Top set',
+  'trends.est1rm': 'Est. 1RM',
+  'trends.volume': 'Weekly volume',
+  'trends.nutritionBody': 'Nutrition vs body',
+  'trends.kcalPerDay': 'kcal/day',
+  'trends.weightLine': 'Weight',
+  'trends.sleep': 'Sleep',
+  'trends.avg': 'avg',
+  'trends.noData': 'Not enough data yet — keep logging!',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;
