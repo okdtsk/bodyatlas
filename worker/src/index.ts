@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { authRoutes } from './auth/google';
 import type { AppEnv } from './types';
 
 export const apiApp = new Hono<AppEnv>().get('/health', (c) => c.json({ ok: true }));
@@ -18,6 +19,7 @@ app.onError((err, c) => {
 });
 
 app.route('/api', apiApp);
+app.route('/auth', authRoutes);
 
 export type AppType = typeof apiApp;
 export default app;

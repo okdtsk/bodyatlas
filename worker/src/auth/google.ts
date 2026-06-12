@@ -1,0 +1,153 @@
+import { Hono } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { eq } from 'drizzle-orm';
+import { getDb, schema } from '../db';
+import type { AppEnv } from '../types';
+import { SESSION_COOKIE } from './middleware';
+import { createSession, deleteSession, SESSION_TTL_SECONDS } from './session';
+
+const OAUTH_COOKIE = 'ba_oauth';
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+}
+
+function base64UrlDecode(input: string): string {
+  return atob(input.replaceAll('-', '+').replaceAll('_', '/'));
+}
+
+async function sha256(input: string): Promise<Uint8Array> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(input),
+  );
+  return new Uint8Array(digest);
+}
+
+function isHttps(requestUrl: string): boolean {
+  return new URL(requestUrl).protocol === 'https:';
+}
+
+const badRequest = (message: string) =>
+  ({ error: { code: 'oauth_invalid', message } }) as const;
+
+export const authRoutes = new Hono<AppEnv>()
+  .get('/google', async (c) => {
+    const state = crypto.randomUUID();
+    const verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = base64UrlEncode(await sha256(verifier));
+    const redirectUri = new URL('/auth/google/callback', c.req.url).toString();
+
+    setCookie(c, OAUTH_COOKIE, JSON.stringify({ state, verifier }), {
+      httpOnly: true,
+      secure: isHttps(c.req.url),
+      sameSite: 'Lax',
+      path: '/auth',
+      maxAge: 600,
+    });
+
+    const params = new URLSearchParams({
+      client_id: c.env.GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+    });
+    return c.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`);
+  })
+  .get('/google/callback', async (c) => {
+    const raw = getCookie(c, OAUTH_COOKIE);
+    deleteCookie(c, OAUTH_COOKIE, { path: '/auth' });
+
+    const code = c.req.query('code');
+    const returnedState = c.req.query('state');
+    if (!raw || !code || !returnedState) {
+      return c.json(badRequest('Missing OAuth parameters'), 400);
+    }
+
+    let stored: { state: string; verifier: string };
+    try {
+      stored = JSON.parse(raw) as { state: string; verifier: string };
+    } catch {
+      return c.json(badRequest('Malformed OAuth cookie'), 400);
+    }
+    if (returnedState !== stored.state) {
+      return c.json(badRequest('State mismatch'), 400);
+    }
+
+    const redirectUri = new URL('/auth/google/callback', c.req.url).toString();
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: c.env.GOOGLE_CLIENT_ID,
+        client_secret: c.env.GOOGLE_CLIENT_SECRET,
+        code,
+        code_verifier: stored.verifier,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+      }),
+    });
+    if (!tokenRes.ok) {
+      return c.json(
+        { error: { code: 'oauth_exchange_failed', message: 'Google sign-in failed' } },
+        502,
+      );
+    }
+
+    // The id_token arrives directly from Google's token endpoint over TLS,
+    // so decoding without signature verification is safe here.
+    const { id_token } = (await tokenRes.json()) as { id_token: string };
+    const payload = id_token.split('.')[1];
+    if (!payload) return c.json(badRequest('Malformed id_token'), 400);
+    const claims = JSON.parse(base64UrlDecode(payload)) as {
+      sub: string;
+      email: string;
+      name?: string;
+    };
+
+    const db = getDb(c.env.DB);
+    const existing = await db.query.users.findFirst({
+      where: eq(schema.users.googleSub, claims.sub),
+    });
+    const userId = existing?.id ?? crypto.randomUUID();
+    const displayName = claims.name ?? claims.email;
+    if (existing) {
+      await db
+        .update(schema.users)
+        .set({ email: claims.email, name: displayName })
+        .where(eq(schema.users.id, userId));
+    } else {
+      await db.insert(schema.users).values({
+        id: userId,
+        googleSub: claims.sub,
+        email: claims.email,
+        name: displayName,
+      });
+    }
+
+    const token = await createSession(c.env.SESSIONS, userId);
+    setCookie(c, SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: isHttps(c.req.url),
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    });
+    const homeUrl = new URL('/', c.req.url).toString();
+    return c.redirect(homeUrl);
+  })
+  .post('/logout', async (c) => {
+    const token = getCookie(c, SESSION_COOKIE);
+    if (token) await deleteSession(c.env.SESSIONS, token);
+    deleteCookie(c, SESSION_COOKIE, { path: '/' });
+    const homeUrl = new URL('/', c.req.url).toString();
+    return c.redirect(homeUrl);
+  });
