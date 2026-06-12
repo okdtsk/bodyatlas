@@ -251,4 +251,18 @@ describe('/api/workouts nested exercises and sets', () => {
     ).json()) as WorkoutDetail;
     expect(detail.workoutExercises).toHaveLength(0);
   });
+
+  it('allows editing a finished workout (post-hoc history fixes are a feature)', async () => {
+    const headers = await authed();
+    await seedWorkout('w-done', 'user-1', 'seed-deadlift', [{ weightKg: 100, reps: 5 }]);
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts/w-done/exercises/w-done-we1/sets',
+      json(headers, { weightKg: 102.5, reps: 5 }),
+    );
+    expect(res.status).toBe(201);
+    const detail = (await (
+      await SELF.fetch('https://example.com/api/workouts/w-done', { headers })
+    ).json()) as WorkoutDetail;
+    expect(detail.workoutExercises[0]?.sets).toHaveLength(2);
+  });
 });

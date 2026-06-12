@@ -162,6 +162,9 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
     },
   )
   // --- nested: workout exercises ---
+  // Nested mutations intentionally work on finished workouts too: editing past
+  // sessions (e.g., fixing a mistyped weight from history) is a feature. The
+  // single-active rule only governs workout creation, not edits.
   .post(
     '/:id/exercises',
     zValidator('json', addWorkoutExerciseSchema, (result, c) => {
