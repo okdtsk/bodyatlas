@@ -9,12 +9,13 @@ Approved design spec: `docs/superpowers/specs/2026-06-12-bodyatlas-design.md` (s
 - End-to-end types: Drizzle `$type<>` unions → Hono RPC `AppType` → `hc` client in the app. Shared Zod schemas validate on both sides.
 - Dev: `npm run dev` (single origin, localhost:5173). Test: `npm test` (vitest; workers pool for the API). Deploy: `npm run deploy`.
 
-# Current Status (2026-06-12) — v1 COMPLETE
+# Current Status (2026-06-13) — v1 COMPLETE
 
 All four v1 plans are shipped and deployed. Phase 2 progress:
 - **MCP server (Phase 2a) shipped and deployed**: `https://bodyatlas.okdtsk.dev/mcp` (streamable HTTP), per-user `ba_` bearer tokens (hash-only storage, managed in Settings), 7 tools (log_meal/log_workout/log_weight/log_sleep/get_recent_workouts/get_trends/get_today). Setup guide: `docs/mcp-setup.md`. The MCP DO is `BodyAtlasMCP`; tools are plain functions in `worker/src/mcp/tools.ts`.
 - **AI coach (Phase 2b) shipped and deployed**: BYO-key (Claude/OpenAI/Gemini) configured in Settings, keys AES-256-GCM encrypted at rest (`AI_KEY_SECRET` Worker secret); ✨ meal nutrition estimation in the meal form; on-demand weekly coach review (locale-aware) on the Trends tab. Adapter in `worker/src/lib/llm.ts`; endpoints under `/api/ai/*`.
-- Remaining phase 2 (not started): iOS shell (Capacitor + HealthKit), offline queue — see the spec's Phase 2 outlook.
+- **iOS shell (Phase 2c) built, pending user device verification**: Capacitor 8 remote-URL shell (WKWebView loads the live site — web deploys update the app instantly; same-origin cookie session works natively), SPM (no CocoaPods). Custom `HealthSync` Swift plugin (Apple Health sleep + weight/body-fat reads); Cap 8 has NO plugin auto-discovery — registration is in `ios/App/App/MainViewController.swift` (`capacitorDidLoad` → `registerPluginType`). Web side: `app/src/lib/native.ts` (bridge wrappers + tested pure merge/dedupe: `mergeSleepSamples`, `mergeMeasurementSamples` — measuredAt carried from the sample, never import-time; day-keyed dedupe makes re-import idempotent); Settings → Apple Health section renders only when `isNativeShell()`. Setup guide: `docs/ios-setup.md`. Known risk: Google OAuth in WKWebView may hit `disallowed_useragent` — documented fallback is SFSafariViewController (not built).
+- Remaining phase 2 (not started): offline queue — see the spec's Phase 2 outlook.
 
 
 - **Foundation (Plan 1) shipped and deployed**: https://bodyatlas.okdtsk.dev — Google OAuth sign-in, themed (Gym Dark default / Clinical Light / Warm Journal), EN/JA, 4-tab shell + quick-log FAB stub, settings persistence.
