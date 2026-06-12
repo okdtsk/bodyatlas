@@ -89,8 +89,10 @@ export function SettingsPage() {
               defaultValue={me[key] ?? ''}
               style={{ ...fieldStyle, maxWidth: 160 }}
               onBlur={(e) => {
-                const parsed = parseInt(e.target.value, 10);
+                const parsed = Math.round(parseFloat(e.target.value));
                 const next = Number.isNaN(parsed) ? null : parsed;
+                // Normalize the display so it matches the saved value.
+                e.target.value = next === null ? '' : String(next);
                 const prev = me[key] ?? null;
                 if (next !== prev) {
                   update.mutate({ [key]: next });

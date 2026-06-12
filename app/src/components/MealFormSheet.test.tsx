@@ -94,4 +94,24 @@ describe('MealFormSheet', () => {
       expect(body.calories).toBe(350);
     });
   });
+
+  it('rounds decimal kcal input to an integer in the POST body', async () => {
+    const spy = mockApi({
+      'GET /api/meals/search': [],
+      'POST /api/meals': { id: 'new-2', name: 'Snack', calories: 251, proteinG: null, fatG: null, carbsG: null, notes: null, isFavorite: false, userId: 'u1', eatenAt: '2026-06-12T15:00:00.000Z' },
+    });
+    renderSheet();
+
+    await userEvent.type(screen.getByLabelText('Meal'), 'Snack');
+    await userEvent.type(screen.getByLabelText('kcal'), '250.5');
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      const postCall = spy.mock.calls.find(([url, init]) => String(url).includes('/api/meals') && init?.method === 'POST');
+      expect(postCall).toBeTruthy();
+      const body = JSON.parse(String(postCall![1]!.body));
+      expect(body.calories).toBe(251);
+    });
+  });
 });

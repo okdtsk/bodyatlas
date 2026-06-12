@@ -75,7 +75,8 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
     return {
       name: name.trim(),
       eatenAt: new Date(time).toISOString(),
-      ...(parseDecimal(kcal) !== undefined ? { calories: parseDecimal(kcal) } : {}),
+      // Server-side schema requires an integer for calories; round decimal input.
+      ...(parseDecimal(kcal) !== undefined ? { calories: Math.round(parseDecimal(kcal)!) } : {}),
       ...(parseDecimal(protein) !== undefined ? { proteinG: parseDecimal(protein) } : {}),
       ...(parseDecimal(fat) !== undefined ? { fatG: parseDecimal(fat) } : {}),
       ...(parseDecimal(carbs) !== undefined ? { carbsG: parseDecimal(carbs) } : {}),
@@ -150,7 +151,7 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
                     <span>{s.name}</span>
                     {s.calories != null && (
                       <span className="muted" style={{ marginLeft: 8 }}>
-                        {s.calories} kcal
+                        {s.calories} {t('health.calories')}
                       </span>
                     )}
                   </button>

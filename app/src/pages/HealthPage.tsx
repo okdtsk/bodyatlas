@@ -72,21 +72,20 @@ export function HealthPage() {
   const sleepQuery = useSleep(fromIso, toIso);
   const measurementsQuery = useMeasurements(fromIso, toIso);
 
-  // Handle ?add=meal|weight|sleep on mount
+  // Handle ?add=meal|weight|sleep — reacts to searchParams so quick-log
+  // navigation works even when already on /health.
   useEffect(() => {
     const add = searchParams.get('add');
+    if (!add) return;
     if (add === 'meal') {
       setOpenSheet({ kind: 'meal' });
-      setSearchParams({}, { replace: true });
     } else if (add === 'weight') {
       setOpenSheet({ kind: 'measurement' });
-      setSearchParams({}, { replace: true });
     } else if (add === 'sleep') {
       setOpenSheet({ kind: 'sleep' });
-      setSearchParams({}, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const meals = mealsQuery.data ?? [];
   const sleepRecords = sleepQuery.data ?? [];
@@ -205,7 +204,7 @@ export function HealthPage() {
               onClick={() => setOpenSheet({ kind: 'meal', editing: meal })}
             >
               <span className="muted" style={{ minWidth: 42 }}>
-                {formatTime(meal.eatenAt as unknown as string, locale)}
+                {formatTime(meal.eatenAt, locale)}
               </span>
               <span style={{ flex: 1, fontWeight: 500 }}>{meal.name}</span>
               {meal.calories != null && (
@@ -241,10 +240,10 @@ export function HealthPage() {
               onClick={() => setOpenSheet({ kind: 'sleep', editing: s })}
             >
               <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
-                {sleepDurationLabel(s.bedAt as unknown as string, s.wokeAt as unknown as string)}
+                {sleepDurationLabel(s.bedAt, s.wokeAt)}
               </div>
               <div className="muted">
-                {formatTime(s.bedAt as unknown as string, locale)} → {formatTime(s.wokeAt as unknown as string, locale)}
+                {formatTime(s.bedAt, locale)} → {formatTime(s.wokeAt, locale)}
               </div>
               {s.quality != null && (
                 <div style={{ marginTop: 4 }}>{'★'.repeat(s.quality)}</div>
@@ -278,7 +277,10 @@ export function HealthPage() {
               onClick={() => setOpenSheet({ kind: 'measurement', editing: m })}
             >
               {m.weightKg != null && (
-                <div style={{ fontSize: 22, fontWeight: 700 }}>{m.weightKg} kg</div>
+                <div>
+                  <div className="eyebrow">{t('health.weight')}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>{m.weightKg}</div>
+                </div>
               )}
               {m.bodyFatPct != null && (
                 <div className="muted">{m.bodyFatPct}% {t('health.bodyFat')}</div>
