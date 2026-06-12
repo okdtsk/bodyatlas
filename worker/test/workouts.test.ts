@@ -150,3 +150,105 @@ describe('/api/workouts', () => {
     expect((await SELF.fetch('https://example.com/api/workouts/w-mine', { headers })).status).toBe(404);
   });
 });
+
+describe('/api/workouts nested exercises and sets', () => {
+  async function startWorkout(headers: Record<string, string>): Promise<WorkoutDetail> {
+    const res = await SELF.fetch('https://example.com/api/workouts', json(headers, {}));
+    return (await res.json()) as WorkoutDetail;
+  }
+
+  it('adds an exercise, logs sets with incrementing positions, edits and deletes a set', async () => {
+    const headers = await authed();
+    const w = await startWorkout(headers);
+
+    const weRes = await SELF.fetch(
+      `https://example.com/api/workouts/${w.id}/exercises`,
+      json(headers, { exerciseId: 'seed-barbell-bench-press' }),
+    );
+    expect(weRes.status).toBe(201);
+    const we = (await weRes.json()) as { id: string; position: number };
+    expect(we.position).toBe(1);
+
+    const s1 = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets`,
+        json(headers, { weightKg: 80, reps: 8, rpe: 8 }),
+      )
+    ).json()) as { id: string; position: number };
+    const s2 = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets`,
+        json(headers, { weightKg: 80, reps: 7 }),
+      )
+    ).json()) as { id: string; position: number };
+    expect([s1.position, s2.position]).toEqual([1, 2]);
+
+    const patched = await SELF.fetch(
+      `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets/${s2.id}`,
+      json(headers, { weightKg: 82.5, reps: 6 }, 'PATCH'),
+    );
+    expect(((await patched.json()) as { weightKg: number }).weightKg).toBe(82.5);
+
+    const del = await SELF.fetch(
+      `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets/${s1.id}`,
+      { headers, method: 'DELETE' },
+    );
+    expect(del.status).toBe(200);
+
+    const detail = (await (
+      await SELF.fetch(`https://example.com/api/workouts/${w.id}`, { headers })
+    ).json()) as WorkoutDetail;
+    expect(detail.workoutExercises[0]?.sets).toHaveLength(1);
+  });
+
+  it('rejects an invalid set payload with 422', async () => {
+    const headers = await authed();
+    const w = await startWorkout(headers);
+    const we = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises`,
+        json(headers, { exerciseId: 'seed-deadlift' }),
+      )
+    ).json()) as { id: string };
+    const res = await SELF.fetch(
+      `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets`,
+      json(headers, { weightKg: 80 }), // no reps/duration/distance
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("cannot touch another user's workout via nested routes", async () => {
+    const headers = await authed();
+    await seedUser('user-2');
+    await seedWorkout('w-theirs', 'user-2', 'seed-deadlift', []);
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts/w-theirs/exercises',
+      json(headers, { exerciseId: 'seed-deadlift' }),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it('removes a workout exercise together with its sets', async () => {
+    const headers = await authed();
+    const w = await startWorkout(headers);
+    const we = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises`,
+        json(headers, { exerciseId: 'seed-dip' }),
+      )
+    ).json()) as { id: string };
+    await SELF.fetch(
+      `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets`,
+      json(headers, { reps: 10 }),
+    );
+    const del = await SELF.fetch(`https://example.com/api/workouts/${w.id}/exercises/${we.id}`, {
+      headers,
+      method: 'DELETE',
+    });
+    expect(del.status).toBe(200);
+    const detail = (await (
+      await SELF.fetch(`https://example.com/api/workouts/${w.id}`, { headers })
+    ).json()) as WorkoutDetail;
+    expect(detail.workoutExercises).toHaveLength(0);
+  });
+});

@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
-import { createWorkoutSchema, updateWorkoutSchema } from '@bodyatlas/shared';
-import { and, asc, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { addWorkoutExerciseSchema, createWorkoutSchema, setInputSchema, updateWorkoutSchema } from '@bodyatlas/shared';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema, type Db } from '../db';
 import type { ProtectedEnv } from '../types';
@@ -25,6 +25,23 @@ async function findActive(db: Db, userId: string) {
   return db.query.workouts.findFirst({
     where: and(eq(schema.workouts.userId, userId), isNull(schema.workouts.endedAt)),
   });
+}
+
+/** Loads a workout_exercise only if its workout belongs to the user. */
+async function ownedWorkoutExercise(db: Db, userId: string, workoutId: string, weId: string) {
+  const [row] = await db
+    .select({ id: schema.workoutExercises.id })
+    .from(schema.workoutExercises)
+    .innerJoin(schema.workouts, eq(schema.workoutExercises.workoutId, schema.workouts.id))
+    .where(
+      and(
+        eq(schema.workoutExercises.id, weId),
+        eq(schema.workoutExercises.workoutId, workoutId),
+        eq(schema.workouts.userId, userId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 export const workoutsRoutes = new Hono<ProtectedEnv>()
@@ -144,6 +161,122 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       return c.json(await loadWorkoutDetail(db, userId, id), 201);
     },
   )
+  // --- nested: workout exercises ---
+  .post(
+    '/:id/exercises',
+    zValidator('json', addWorkoutExerciseSchema, (result, c) => {
+      if (!result.success) return c.json(validationError(result.error.issues), 422);
+    }),
+    async (c) => {
+      const db = getDb(c.env.DB);
+      const userId = c.get('userId');
+      const workout = await db.query.workouts.findFirst({
+        where: and(eq(schema.workouts.id, c.req.param('id')), eq(schema.workouts.userId, userId)),
+      });
+      if (!workout) return c.json(notFound, 404);
+      const { exerciseId } = c.req.valid('json');
+      const exercise = await db.query.exercises.findFirst({
+        where: and(
+          eq(schema.exercises.id, exerciseId),
+          or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
+        ),
+      });
+      if (!exercise) return c.json(validationError([{ message: 'Unknown exerciseId' }]), 422);
+      const existing = await db
+        .select({ position: schema.workoutExercises.position })
+        .from(schema.workoutExercises)
+        .where(eq(schema.workoutExercises.workoutId, workout.id))
+        .orderBy(desc(schema.workoutExercises.position))
+        .limit(1);
+      const we = {
+        id: crypto.randomUUID(),
+        workoutId: workout.id,
+        exerciseId,
+        position: (existing[0]?.position ?? 0) + 1,
+      };
+      await db.insert(schema.workoutExercises).values(we);
+      return c.json({ ...we, exercise }, 201);
+    },
+  )
+  .delete('/:id/exercises/:weId', async (c) => {
+    const db = getDb(c.env.DB);
+    const we = await ownedWorkoutExercise(db, c.get('userId'), c.req.param('id'), c.req.param('weId'));
+    if (!we) return c.json(notFound, 404);
+    await db.delete(schema.workoutExercises).where(eq(schema.workoutExercises.id, we.id)); // cascades to sets
+    return c.json({ ok: true });
+  })
+  // --- nested: sets ---
+  .post(
+    '/:id/exercises/:weId/sets',
+    zValidator('json', setInputSchema, (result, c) => {
+      if (!result.success) return c.json(validationError(result.error.issues), 422);
+    }),
+    async (c) => {
+      const db = getDb(c.env.DB);
+      const we = await ownedWorkoutExercise(db, c.get('userId'), c.req.param('id'), c.req.param('weId'));
+      if (!we) return c.json(notFound, 404);
+      const input = c.req.valid('json');
+      const last = await db
+        .select({ position: schema.sets.position })
+        .from(schema.sets)
+        .where(eq(schema.sets.workoutExerciseId, we.id))
+        .orderBy(desc(schema.sets.position))
+        .limit(1);
+      const set = {
+        id: crypto.randomUUID(),
+        workoutExerciseId: we.id,
+        position: (last[0]?.position ?? 0) + 1,
+        weightKg: input.weightKg ?? null,
+        reps: input.reps ?? null,
+        rpe: input.rpe ?? null,
+        durationSec: input.durationSec ?? null,
+        distanceM: input.distanceM ?? null,
+      };
+      await db.insert(schema.sets).values(set);
+      return c.json(set, 201);
+    },
+  )
+  .patch(
+    '/:id/exercises/:weId/sets/:setId',
+    zValidator('json', setInputSchema, (result, c) => {
+      if (!result.success) return c.json(validationError(result.error.issues), 422);
+    }),
+    async (c) => {
+      const db = getDb(c.env.DB);
+      const we = await ownedWorkoutExercise(db, c.get('userId'), c.req.param('id'), c.req.param('weId'));
+      if (!we) return c.json(notFound, 404);
+      const setId = c.req.param('setId');
+      const existing = await db.query.sets.findFirst({
+        where: and(eq(schema.sets.id, setId), eq(schema.sets.workoutExerciseId, we.id)),
+      });
+      if (!existing) return c.json(notFound, 404);
+      const input = c.req.valid('json');
+      await db
+        .update(schema.sets)
+        .set({
+          weightKg: input.weightKg ?? null,
+          reps: input.reps ?? null,
+          rpe: input.rpe ?? null,
+          durationSec: input.durationSec ?? null,
+          distanceM: input.distanceM ?? null,
+        })
+        .where(eq(schema.sets.id, setId));
+      const updated = await db.query.sets.findFirst({ where: eq(schema.sets.id, setId) });
+      return c.json(updated);
+    },
+  )
+  .delete('/:id/exercises/:weId/sets/:setId', async (c) => {
+    const db = getDb(c.env.DB);
+    const we = await ownedWorkoutExercise(db, c.get('userId'), c.req.param('id'), c.req.param('weId'));
+    if (!we) return c.json(notFound, 404);
+    const setId = c.req.param('setId');
+    const existing = await db.query.sets.findFirst({
+      where: and(eq(schema.sets.id, setId), eq(schema.sets.workoutExerciseId, we.id)),
+    });
+    if (!existing) return c.json(notFound, 404);
+    await db.delete(schema.sets).where(eq(schema.sets.id, setId));
+    return c.json({ ok: true });
+  })
   .get('/:id', async (c) => {
     const db = getDb(c.env.DB);
     const detail = await loadWorkoutDetail(db, c.get('userId'), c.req.param('id'));
