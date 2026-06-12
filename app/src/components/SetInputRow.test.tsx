@@ -39,6 +39,22 @@ describe('SetInputRow', () => {
     expect(onSubmit).toHaveBeenCalledWith({ weightKg: 82.5, reps: 8 });
   });
 
+  it('rounds distance meters so edited values do not drift', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <I18nProvider locale="en">
+        <SetInputRow
+          exerciseType="cardio"
+          onSubmit={onSubmit}
+          submitLabel="Log set"
+          initial={{ distanceKm: '1.001' }}
+        />
+      </I18nProvider>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Log set' }));
+    expect(onSubmit).toHaveBeenCalledWith({ distanceM: 1001 });
+  });
+
   it('disables submit when nothing countable is entered', async () => {
     renderRow('strength');
     expect(screen.getByRole('button', { name: 'Log set' })).toBeDisabled();

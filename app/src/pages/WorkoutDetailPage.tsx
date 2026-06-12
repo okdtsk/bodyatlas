@@ -75,7 +75,12 @@ export function WorkoutDetailPage() {
 
   const saveNotes = () => {
     if (notes !== null && notes !== (workout.notes ?? '')) {
-      update.mutate({ notes: notes === '' ? null : notes });
+      update.mutate(
+        { notes: notes === '' ? null : notes },
+        { onSuccess: () => setNotes(null) },
+      );
+    } else if (notes !== null) {
+      setNotes(null); // unchanged — release the shadow
     }
   };
 

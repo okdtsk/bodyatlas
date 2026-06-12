@@ -37,7 +37,7 @@ export function SetInputRow({
     ...(num(reps) !== undefined ? { reps: num(reps) } : {}),
     ...(num(rpe) !== undefined ? { rpe: num(rpe) } : {}),
     ...(num(durationMin) !== undefined ? { durationSec: Math.round(num(durationMin)! * 60) } : {}),
-    ...(num(distanceKm) !== undefined ? { distanceM: num(distanceKm)! * 1000 } : {}),
+    ...(num(distanceKm) !== undefined ? { distanceM: Math.round(num(distanceKm)! * 1000) } : {}),
   });
 
   const valid =
