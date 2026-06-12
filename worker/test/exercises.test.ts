@@ -97,6 +97,19 @@ describe('/api/exercises', () => {
     expect(body?.workoutId).toBe('w-prev');
   });
 
+  it("last-sets never returns another user's workout data", async () => {
+    const headers = await authed();
+    await seedUser('user-2');
+    await seedWorkout('w-theirs', 'user-2', 'seed-barbell-bench-press', [{ weightKg: 200, reps: 1 }]);
+
+    const res = await SELF.fetch(
+      'https://example.com/api/exercises/seed-barbell-bench-press/last-sets',
+      { headers },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toBeNull(); // user-1 has never performed it
+  });
+
   it('last-sets returns null when never performed', async () => {
     const headers = await authed();
     const res = await SELF.fetch('https://example.com/api/exercises/seed-dip/last-sets', { headers });
