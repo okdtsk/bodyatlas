@@ -82,6 +82,7 @@ export function WorkoutDetailPage() {
   if (!workout) return <p className="muted">{t('error.generic')}</p>;
 
   const saveNotes = () => {
+    lastTimeVarsRef.current = null; // a notes-save failure must not surface the time-range message
     if (notes !== null && notes !== (workout.notes ?? '')) {
       update.mutate(
         { notes: notes === '' ? null : notes },
@@ -103,10 +104,12 @@ export function WorkoutDetailPage() {
     update.mutate(vars);
   };
 
+  // expectOk throws `Error("API error <status>")`, so the 422 check is a cheap message match.
   const showTimeError =
     update.isError &&
     lastTimeVarsRef.current !== null &&
-    ('startedAt' in lastTimeVarsRef.current || 'endedAt' in lastTimeVarsRef.current);
+    update.error instanceof Error &&
+    update.error.message.includes('422');
 
   return (
     <section className="stack">

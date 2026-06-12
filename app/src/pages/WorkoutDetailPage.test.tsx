@@ -111,4 +111,16 @@ describe('WorkoutDetailPage', () => {
       expect(new Date(body.startedAt!).getMinutes()).toBe(15);
     });
   });
+
+  it('does not PATCH when the start time is blurred unchanged', async () => {
+    const spy = mockApi({ 'GET /api/workouts/w1': finished });
+    renderDetail();
+    await screen.findByText('Deadlift');
+    const startInput = screen.getByLabelText('Start time') as HTMLInputElement;
+    startInput.focus();
+    startInput.blur();
+    expect(
+      spy.mock.calls.find(([, init]) => init?.method === 'PATCH'),
+    ).toBeUndefined();
+  });
 });
