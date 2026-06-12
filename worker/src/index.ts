@@ -56,6 +56,11 @@ export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/')) {
+      // CORS preflights carry no Authorization header and mutate nothing —
+      // let the MCP handler answer them so browser-based connectors work.
+      if (request.method === 'OPTIONS') {
+        return mcpHandler.fetch(request, env, ctx);
+      }
       const auth = request.headers.get('Authorization') ?? '';
       const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
       const userId = token ? await verifyToken(env.DB, token) : null;

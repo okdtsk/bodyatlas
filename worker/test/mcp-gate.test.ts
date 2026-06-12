@@ -22,6 +22,18 @@ describe('MCP bearer gate', () => {
     expect(body.error.code).toBe('unauthorized');
   });
 
+  it('lets OPTIONS preflight through without auth (status !== 401)', async () => {
+    const res = await SELF.fetch('http://localhost/mcp', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://claude.ai',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'authorization,content-type',
+      },
+    });
+    expect(res.status).not.toBe(401);
+  });
+
   it('returns 401 with ba_-prefixed token not in DB', async () => {
     const fakeToken = generateToken();
     const res = await SELF.fetch('http://localhost/mcp', {

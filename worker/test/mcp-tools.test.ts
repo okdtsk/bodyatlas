@@ -40,6 +40,37 @@ describe('dayWindowFor', () => {
     expect(from.toISOString()).toBe('2026-06-12T00:00:00.000Z');
     expect(to.toISOString()).toBe('2026-06-13T00:00:00.000Z');
   });
+
+  /** Formats an instant as local wall-clock time with milliseconds in the tz. */
+  function localTimeString(timezone: string, d: Date): string {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3,
+      hourCycle: 'h23',
+    }).format(d);
+  }
+
+  it('America/New_York winter day: exact-millisecond midnight, 24h window', () => {
+    const { from, to } = dayWindowFor('America/New_York', new Date('2026-01-15T12:00:00Z'));
+    // EST = UTC-5 → local midnight Jan 15 = 05:00:00.000Z
+    expect(from.toISOString()).toBe('2026-01-15T05:00:00.000Z');
+    expect(localTimeString('America/New_York', from)).toBe('00:00:00.000');
+    expect(to.getTime() - from.getTime()).toBe(24 * 3600 * 1000);
+  });
+
+  it('America/New_York DST spring-forward day: exact midnight, 23h window', () => {
+    // 2026-03-08 is the spring-forward day (02:00 EST → 03:00 EDT)
+    const { from, to } = dayWindowFor('America/New_York', new Date('2026-03-08T12:00:00Z'));
+    // Midnight Mar 8 is still EST (UTC-5) → 05:00:00.000Z
+    expect(from.toISOString()).toBe('2026-03-08T05:00:00.000Z');
+    expect(localTimeString('America/New_York', from)).toBe('00:00:00.000');
+    // Midnight Mar 9 is EDT (UTC-4) → 04:00:00.000Z → 23h day
+    expect(to.toISOString()).toBe('2026-03-09T04:00:00.000Z');
+    expect(to.getTime() - from.getTime()).toBe(23 * 3600 * 1000);
+  });
 });
 
 // ---------------------------------------------------------------------------
