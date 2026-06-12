@@ -65,3 +65,28 @@ export function toLocalInputValue(iso: string): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+export function addDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+/** Local-midnight day window as TZ-explicit ISO instants. */
+export function dayRangeIso(d: Date): { fromIso: string; toIso: string } {
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return { fromIso: start.toISOString(), toIso: addDays(start, 1).toISOString() };
+}
+
+export function formatTime(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(iso));
+}
+
+export function sleepDurationLabel(bedIso: string, wokeIso: string): string {
+  const mins = Math.round((new Date(wokeIso).getTime() - new Date(bedIso).getTime()) / 60000);
+  return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m`;
+}

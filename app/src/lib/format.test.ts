@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exerciseName, formatSet, toLocalInputValue, trimNum, weightDelta } from './format';
+import { addDays, dayRangeIso, exerciseName, formatSet, sleepDurationLabel, toLocalInputValue, trimNum, weightDelta } from './format';
 
 describe('trimNum', () => {
   it('drops trailing zeros', () => {
@@ -52,5 +52,27 @@ describe('toLocalInputValue', () => {
     const v = toLocalInputValue('2026-06-01T09:30:00.000Z');
     expect(v).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     expect(new Date(v).getMinutes()).toBe(new Date('2026-06-01T09:30:00.000Z').getMinutes());
+  });
+});
+
+describe('dayRangeIso', () => {
+  it('returns local midnight to next midnight as TZ-explicit ISO', () => {
+    const d = new Date(2026, 5, 12, 15, 30); // local June 12
+    const { fromIso, toIso } = dayRangeIso(d);
+    expect(new Date(fromIso).getHours()).toBe(0);
+    expect(new Date(toIso).getTime() - new Date(fromIso).getTime()).toBe(86400000);
+    expect(fromIso.endsWith('Z')).toBe(true);
+  });
+});
+
+describe('addDays', () => {
+  it('moves whole days', () => {
+    expect(addDays(new Date(2026, 5, 12), -1).getDate()).toBe(11);
+  });
+});
+
+describe('sleepDurationLabel', () => {
+  it('formats h:mm', () => {
+    expect(sleepDurationLabel('2026-06-11T14:40:00.000Z', '2026-06-11T22:00:00.000Z')).toBe('7h 20m');
   });
 });
