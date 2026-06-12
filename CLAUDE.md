@@ -11,8 +11,9 @@ Approved design spec: `docs/superpowers/specs/2026-06-12-bodyatlas-design.md` (s
 
 # Current Status (2026-06-12)
 
-- **Foundation (Plan 1) shipped and deployed**: https://bodyatlas.okdtsk.workers.dev — Google OAuth sign-in, themed (Gym Dark default / Clinical Light / Warm Journal), EN/JA, 4-tab shell + quick-log FAB stub, settings persistence.
-- Pending plans: Plan 2 workout logging, Plan 3 health tracking (meals/sleep/measurements), Plan 4 trends + Today dashboard. Plans live in `docs/superpowers/plans/`.
+- **Foundation (Plan 1) shipped and deployed**: https://bodyatlas.okdtsk.dev — Google OAuth sign-in, themed (Gym Dark default / Clinical Light / Warm Journal), EN/JA, 4-tab shell + quick-log FAB stub, settings persistence.
+- **Workout API (Plan 2a) shipped and deployed**: exercises (42 seeded EN/JA + custom), templates, workouts/sets endpoints with single-active rule, last-sets ghosts, post-hoc history editing. Timestamps cross the RPC boundary as ISO strings.
+- Pending plans: Plan 2b workout UI (Train tab), Plan 3 health tracking (meals/sleep/measurements), Plan 4 trends + Today dashboard + Playwright E2E. Plans live in `docs/superpowers/plans/`.
 - Phase 2 (after v1): MCP server, AI coach, iOS shell (Capacitor + HealthKit), offline queue.
 
 # Core Features
