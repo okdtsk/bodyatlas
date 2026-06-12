@@ -11,6 +11,7 @@ import {
   isNativeShell,
   healthRequestAuth,
   healthQuerySamples,
+  mergeMeasurementSamples,
   mergeSleepSamples,
   pickNewDays,
 } from '../lib/native';
@@ -55,8 +56,10 @@ export function SettingsPage() {
 
   // Apple Health state
   const [ahConnected, setAhConnected] = useState(false);
+  const [ahConnecting, setAhConnecting] = useState(false);
   const [ahSyncing, setAhSyncing] = useState(false);
   const [ahResult, setAhResult] = useState<{ sleep: number; weight: number } | null>(null);
+  const [ahFailed, setAhFailed] = useState(0);
   const [ahError, setAhError] = useState(false);
   const createSleep = useCreateSleep();
   const createMeasurement = useCreateMeasurement();
@@ -129,17 +132,23 @@ export function SettingsPage() {
   }
 
   async function handleAhConnect() {
+    if (ahConnecting) return; // double-tap guard
+    setAhConnecting(true);
+    setAhError(false);
     try {
       await healthRequestAuth();
       setAhConnected(true);
     } catch {
       setAhError(true);
+    } finally {
+      setAhConnecting(false);
     }
   }
 
   async function handleAhSync() {
     setAhSyncing(true);
     setAhResult(null);
+    setAhFailed(0);
     setAhError(false);
     try {
       // 1. Query Apple Health for the past 30 days
@@ -174,42 +183,46 @@ export function SettingsPage() {
       // 5. Dedupe: pick only new days
       const newSleep = pickNewDays(mergedSleep, existingSleepDays, (r) => localDayKey(r.wokeAt));
 
-      // 6. Merge weight + bodyFat samples by local day into one measurement per day
-      type DayMeasurement = { day: string; kg?: number; pct?: number };
-      const measurementByDay = new Map<string, DayMeasurement>();
-      for (const w of samples.weight) {
-        const day = localDayKey(w.date);
-        const entry = measurementByDay.get(day) ?? { day };
-        entry.kg = w.kg;
-        measurementByDay.set(day, entry);
-      }
-      for (const bf of samples.bodyFat) {
-        const day = localDayKey(bf.date);
-        const entry = measurementByDay.get(day) ?? { day };
-        entry.pct = bf.pct;
-        measurementByDay.set(day, entry);
-      }
-      const allMeasurements = [...measurementByDay.values()];
+      // 6. Merge weight + bodyFat samples by local day into one measurement per day,
+      //    keeping the original sample timestamp (never import-time "now")
+      const allMeasurements = mergeMeasurementSamples(samples.weight, samples.bodyFat);
       const newMeasurements = pickNewDays(
         allMeasurements,
         existingMeasurementDays,
         (m) => m.day,
       );
 
-      // 7. POST each new sleep record sequentially
+      // 7-8. POST sequentially, per-record try/catch so a mid-import failure
+      // still reports how many records actually persisted
+      let sleepOk = 0;
+      let weightOk = 0;
+      let failed = 0;
+
       for (const record of newSleep) {
-        await createSleep.mutateAsync({ bedAt: record.bedAt, wokeAt: record.wokeAt });
+        try {
+          await createSleep.mutateAsync({ bedAt: record.bedAt, wokeAt: record.wokeAt });
+          sleepOk++;
+        } catch {
+          failed++;
+        }
       }
 
-      // 8. POST each new measurement sequentially
       for (const m of newMeasurements) {
-        const input: { weightKg?: number; bodyFatPct?: number } = {};
+        const input: { measuredAt: string; weightKg?: number; bodyFatPct?: number } = {
+          measuredAt: m.measuredAt,
+        };
         if (m.kg !== undefined) input.weightKg = m.kg;
         if (m.pct !== undefined) input.bodyFatPct = m.pct;
-        await createMeasurement.mutateAsync(input);
+        try {
+          await createMeasurement.mutateAsync(input);
+          weightOk++;
+        } catch {
+          failed++;
+        }
       }
 
-      setAhResult({ sleep: newSleep.length, weight: newMeasurements.length });
+      setAhResult({ sleep: sleepOk, weight: weightOk });
+      setAhFailed(failed);
     } catch {
       setAhError(true);
     } finally {
@@ -579,13 +592,15 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={handleAhConnect}
+              disabled={ahConnecting}
               style={{
                 padding: '10px 16px',
                 background: 'var(--surface-2)',
                 color: 'var(--text)',
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius)',
-                cursor: 'pointer',
+                cursor: ahConnecting ? 'not-allowed' : 'pointer',
+                opacity: ahConnecting ? 0.6 : 1,
                 marginBottom: 12,
               }}
             >
@@ -618,6 +633,12 @@ export function SettingsPage() {
               {t('native.syncResult')
                 .replace('{sleep}', String(ahResult.sleep))
                 .replace('{weight}', String(ahResult.weight))}
+            </p>
+          )}
+
+          {ahFailed > 0 && (
+            <p style={{ color: 'var(--negative)' }}>
+              {t('native.syncPartial').replace('{failed}', String(ahFailed))}
             </p>
           )}
 

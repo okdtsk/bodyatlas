@@ -195,5 +195,6 @@ export const ja: Record<MessageKey, string> = {
   'native.sync': '過去30日分を取り込む',
   'native.syncing': '取り込み中…',
   'native.syncResult': '睡眠{sleep}件・体組成{weight}件を取り込みました。',
+  'native.syncPartial': '{failed}件の取り込みに失敗しました。',
   'native.syncError': '取り込みに失敗しました。',
 };

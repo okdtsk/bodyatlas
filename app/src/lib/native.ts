@@ -7,6 +7,8 @@
  * source of truth for the web side of that contract.
  */
 
+import { localDayKey } from './buckets';
+
 // ---------- bridge detection ----------
 
 /** True when the app is running inside the Capacitor iOS shell. */
@@ -145,6 +147,55 @@ export function mergeSleepSamples(samples: HKSleepSample[]): MergedSleep[] {
   }
 
   return groups;
+}
+
+/** One measurement per local day, merged from weight + body fat samples. */
+export interface MergedMeasurement {
+  day: string; // local day key, e.g. '2026-06-12'
+  measuredAt: string; // ISO timestamp carried from the source sample
+  kg?: number;
+  pct?: number;
+}
+
+/**
+ * Merge Apple Health weight and body-fat samples into one entry per local day.
+ *
+ * - Samples sharing a local day collapse into a single entry (kg + pct).
+ * - measuredAt is carried from the source samples — never stamped at import
+ *   time — so the stored record lands on the sample's day and day-keyed
+ *   dedupe survives re-imports. When a day has multiple samples, the latest
+ *   timestamp of that day wins (deterministic regardless of input order).
+ * - Output is sorted by day ascending.
+ */
+export function mergeMeasurementSamples(
+  weight: HKWeightSample[],
+  bodyFat: HKBodyFatSample[],
+): MergedMeasurement[] {
+  const byDay = new Map<string, MergedMeasurement>();
+
+  const upsert = (date: string, apply: (entry: MergedMeasurement) => void) => {
+    const day = localDayKey(date);
+    const entry = byDay.get(day) ?? { day, measuredAt: date };
+    apply(entry);
+    // Keep the later timestamp of the day.
+    if (new Date(date).getTime() > new Date(entry.measuredAt).getTime()) {
+      entry.measuredAt = date;
+    }
+    byDay.set(day, entry);
+  };
+
+  for (const w of weight) {
+    upsert(w.date, (e) => {
+      e.kg = w.kg;
+    });
+  }
+  for (const bf of bodyFat) {
+    upsert(bf.date, (e) => {
+      e.pct = bf.pct;
+    });
+  }
+
+  return [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
 }
 
 /**

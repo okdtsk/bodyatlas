@@ -193,6 +193,7 @@ export const en = {
   'native.sync': 'Import last 30 days',
   'native.syncing': 'Importing…',
   'native.syncResult': 'Imported {sleep} sleep records and {weight} measurements.',
+  'native.syncPartial': '{failed} records failed to import.',
   'native.syncError': 'Import failed.',
 } as const satisfies Record<string, string>;
 
