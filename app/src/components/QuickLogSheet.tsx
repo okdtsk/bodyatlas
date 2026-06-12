@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
 import { useStartWorkout } from '../lib/train';
 
-const DISABLED_ACTIONS: { key: MessageKey; icon: string }[] = [
-  { key: 'quickLog.meal', icon: '🍽' },
-  { key: 'quickLog.weight', icon: '⚖️' },
-  { key: 'quickLog.sleep', icon: '🌙' },
+const HEALTH_ACTIONS: { key: MessageKey; icon: string; path: string }[] = [
+  { key: 'quickLog.meal', icon: '🍽', path: '/health?add=meal' },
+  { key: 'quickLog.weight', icon: '⚖️', path: '/health?add=weight' },
+  { key: 'quickLog.sleep', icon: '🌙', path: '/health?add=sleep' },
 ];
 
 export function QuickLogSheet({ onClose }: { onClose: () => void }) {
@@ -82,10 +82,10 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
           <span>🏋️</span>
           <span>{t('quickLog.set')}</span>
         </button>
-        {DISABLED_ACTIONS.map(({ key, icon }) => (
+        {HEALTH_ACTIONS.map(({ key, icon, path }) => (
           <button
             key={key}
-            disabled
+            onClick={() => { navigate(path); onClose(); }}
             style={{
               display: 'flex',
               gap: 12,
@@ -96,15 +96,13 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
               background: 'var(--surface-2)',
               border: 'none',
               borderRadius: 'var(--radius)',
-              color: 'var(--text-muted)',
+              color: 'var(--text)',
               textAlign: 'left',
+              cursor: 'pointer',
             }}
           >
             <span>{icon}</span>
             <span>{t(key)}</span>
-            <span style={{ marginLeft: 'auto', fontSize: 12 }}>
-              {t('quickLog.comingSoon')}
-            </span>
           </button>
         ))}
       </div>

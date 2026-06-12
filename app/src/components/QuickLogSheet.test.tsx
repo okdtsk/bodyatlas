@@ -16,6 +16,7 @@ function renderSheet(onClose = vi.fn()) {
           <Routes>
             <Route path="/" element={<QuickLogSheet onClose={onClose} />} />
             <Route path="/train/session" element={<div>SESSION PAGE</div>} />
+            <Route path="/health" element={<div>HEALTH PAGE</div>} />
           </Routes>
         </MemoryRouter>
       </I18nProvider>
@@ -40,17 +41,26 @@ describe('QuickLogSheet', () => {
     expect(await screen.findByText('SESSION PAGE')).toBeInTheDocument();
   });
 
-  it('keeps meal, weight, and sleep actions disabled with comingSoon badge', () => {
+  it('clicking the meal action navigates to /health?add=meal and closes the sheet', async () => {
     mockApi({
       'GET /api/workouts/active': { workout: null },
     });
-    renderSheet();
-    const mealBtn = screen.getByRole('button', { name: /Log a meal/i });
-    const weightBtn = screen.getByRole('button', { name: /Log weight/i });
-    const sleepBtn = screen.getByRole('button', { name: /Log sleep/i });
-    expect(mealBtn).toBeDisabled();
-    expect(weightBtn).toBeDisabled();
-    expect(sleepBtn).toBeDisabled();
+    const onClose = vi.fn();
+    renderSheet(onClose);
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
+    expect(await screen.findByText('HEALTH PAGE')).toBeInTheDocument();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('clicking the weight action navigates to /health?add=weight and closes the sheet', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: null },
+    });
+    const onClose = vi.fn();
+    renderSheet(onClose);
+    await userEvent.click(screen.getByRole('button', { name: /Log weight/i }));
+    expect(await screen.findByText('HEALTH PAGE')).toBeInTheDocument();
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('closes on Escape key', async () => {
