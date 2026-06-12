@@ -47,5 +47,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>BodyAtlas imports your sleep and body measurements from Apple Health.</string>
 </dict>
 </plist>
