@@ -32,14 +32,21 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
     const db = getDb(c.env.DB);
     const userId = c.get('userId');
     const { from, to, exerciseId } = c.req.query();
-    const limit = Math.min(Number(c.req.query('limit') ?? 30) || 30, 100);
+    const limit = Math.max(1, Math.min(Number(c.req.query('limit') ?? 30) || 30, 100));
+
+    const fromDate = from ? new Date(from) : undefined;
+    const toDate = to ? new Date(to) : undefined;
+    if ((fromDate && Number.isNaN(fromDate.getTime())) || (toDate && Number.isNaN(toDate.getTime()))) {
+      return c.json({ error: { code: 'validation', message: 'Invalid from/to date' } }, 422);
+    }
 
     let idFilter: string[] | undefined;
     if (exerciseId) {
       const rows = await db
         .selectDistinct({ workoutId: schema.workoutExercises.workoutId })
         .from(schema.workoutExercises)
-        .where(eq(schema.workoutExercises.exerciseId, exerciseId));
+        .innerJoin(schema.workouts, eq(schema.workoutExercises.workoutId, schema.workouts.id))
+        .where(and(eq(schema.workoutExercises.exerciseId, exerciseId), eq(schema.workouts.userId, userId)));
       idFilter = rows.map((r) => r.workoutId);
       if (idFilter.length === 0) return c.json([]);
     }
@@ -47,8 +54,8 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
     const rows = await db.query.workouts.findMany({
       where: and(
         eq(schema.workouts.userId, userId),
-        from ? gte(schema.workouts.startedAt, new Date(from)) : undefined,
-        to ? lte(schema.workouts.startedAt, new Date(to)) : undefined,
+        fromDate ? gte(schema.workouts.startedAt, fromDate) : undefined,
+        toDate ? lte(schema.workouts.startedAt, toDate) : undefined,
         idFilter ? inArray(schema.workouts.id, idFilter) : undefined,
       ),
       orderBy: desc(schema.workouts.startedAt),

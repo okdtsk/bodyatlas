@@ -101,6 +101,43 @@ describe('/api/workouts', () => {
     expect(((await filtered.json()) as Array<{ id: string }>).map((w) => w.id)).toEqual(['w1']);
   });
 
+  it('rejects an invalid from date with 422', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/workouts?from=not-a-date', { headers });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('validation');
+  });
+
+  it('filters workouts by a from/to date window', async () => {
+    const headers = await authed();
+    await seedWorkout('w1', 'user-1', 'seed-deadlift', [{ weightKg: 100, reps: 5 }], {
+      startedAt: new Date('2026-05-01T10:00:00Z'),
+    });
+    await seedWorkout('w2', 'user-1', 'seed-back-squat', [{ weightKg: 90, reps: 5 }, { weightKg: 90, reps: 5 }], {
+      startedAt: new Date('2026-06-01T10:00:00Z'),
+    });
+
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts?from=2026-05-15T00:00:00Z&to=2026-06-15T00:00:00Z',
+      { headers },
+    );
+    expect(res.status).toBe(200);
+    const list = (await res.json()) as Array<{ id: string }>;
+    expect(list.map((w) => w.id)).toEqual(['w2']);
+  });
+
+  it("refuses to copy another user's workout with 404", async () => {
+    const headers = await authed();
+    await seedUser('user-2');
+    await seedWorkout('w-theirs', 'user-2', 'seed-deadlift', [{ weightKg: 100, reps: 5 }]);
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts',
+      json(headers, { copyFromWorkoutId: 'w-theirs' }),
+    );
+    expect(res.status).toBe(404);
+  });
+
   it('scopes detail to the owner and deletes with cascade', async () => {
     const headers = await authed();
     await seedUser('user-2');
