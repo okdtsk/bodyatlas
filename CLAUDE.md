@@ -11,7 +11,9 @@ Approved design spec: `docs/superpowers/specs/2026-06-12-bodyatlas-design.md` (s
 
 # Current Status (2026-06-12) — v1 COMPLETE
 
-All four v1 plans are shipped and deployed. Next phase (not started): MCP server, AI coach, iOS shell (Capacitor + HealthKit), offline queue — see the spec's Phase 2 outlook.
+All four v1 plans are shipped and deployed. Phase 2 progress:
+- **MCP server (Phase 2a) shipped and deployed**: `https://bodyatlas.okdtsk.dev/mcp` (streamable HTTP), per-user `ba_` bearer tokens (hash-only storage, managed in Settings), 7 tools (log_meal/log_workout/log_weight/log_sleep/get_recent_workouts/get_trends/get_today). Setup guide: `docs/mcp-setup.md`. The MCP DO is `BodyAtlasMCP`; tools are plain functions in `worker/src/mcp/tools.ts`.
+- Remaining phase 2 (not started): AI coach (BYO key), iOS shell (Capacitor + HealthKit), offline queue — see the spec's Phase 2 outlook.
 
 
 - **Foundation (Plan 1) shipped and deployed**: https://bodyatlas.okdtsk.dev — Google OAuth sign-in, themed (Gym Dark default / Clinical Light / Warm Journal), EN/JA, 4-tab shell + quick-log FAB stub, settings persistence.
