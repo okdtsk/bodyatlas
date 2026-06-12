@@ -1,16 +1,25 @@
-import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
 import { defineConfig } from 'vitest/config';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
-    cloudflareTest({
-      wrangler: { configPath: './wrangler.jsonc' },
-      miniflare: {
-        bindings: {
-          GOOGLE_CLIENT_ID: 'test-client-id',
-          GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    cloudflareTest(async () => {
+      const migrations = await readD1Migrations(path.join(__dirname, 'migrations'));
+      return {
+        wrangler: { configPath: './wrangler.jsonc' },
+        miniflare: {
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            GOOGLE_CLIENT_ID: 'test-client-id',
+            GOOGLE_CLIENT_SECRET: 'test-client-secret',
+          },
         },
-      },
+      };
     }),
   ],
+  test: { setupFiles: ['./test/apply-migrations.ts'] },
 });
