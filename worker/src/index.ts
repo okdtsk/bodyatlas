@@ -1,8 +1,14 @@
 import { Hono } from 'hono';
 import { authRoutes } from './auth/google';
+import { requireAuth } from './auth/middleware';
+import { meRoutes } from './routes/me';
 import type { AppEnv } from './types';
 
-export const apiApp = new Hono<AppEnv>().get('/health', (c) => c.json({ ok: true }));
+export const apiApp = new Hono<AppEnv>()
+  .get('/health', (c) => c.json({ ok: true }))
+  .use('/me', requireAuth)
+  .use('/me/*', requireAuth)
+  .route('/me', meRoutes as unknown as Hono<AppEnv>);
 
 const app = new Hono<AppEnv>();
 
