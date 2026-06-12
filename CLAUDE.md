@@ -9,14 +9,17 @@ Approved design spec: `docs/superpowers/specs/2026-06-12-bodyatlas-design.md` (s
 - End-to-end types: Drizzle `$type<>` unions → Hono RPC `AppType` → `hc` client in the app. Shared Zod schemas validate on both sides.
 - Dev: `npm run dev` (single origin, localhost:5173). Test: `npm test` (vitest; workers pool for the API). Deploy: `npm run deploy`.
 
-# Current Status (2026-06-12)
+# Current Status (2026-06-12) — v1 COMPLETE
+
+All four v1 plans are shipped and deployed. Next phase (not started): MCP server, AI coach, iOS shell (Capacitor + HealthKit), offline queue — see the spec's Phase 2 outlook.
+
 
 - **Foundation (Plan 1) shipped and deployed**: https://bodyatlas.okdtsk.dev — Google OAuth sign-in, themed (Gym Dark default / Clinical Light / Warm Journal), EN/JA, 4-tab shell + quick-log FAB stub, settings persistence.
 - **Workout API (Plan 2a) shipped and deployed**: exercises (42 seeded EN/JA + custom), templates, workouts/sets endpoints with single-active rule, last-sets ghosts, post-hoc history editing. Timestamps cross the RPC boundary as ISO strings.
 - **Workout UI (Plan 2b) shipped and deployed**: full Train tab — start (template/repeat/empty), active session with previous-performance ghosts, history with set editing, template editor, exercise catalog, quick-log set action. App data hooks derive ALL response types from the worker via `InferResponseType`.
 - **Train polish (Plan 2c) shipped and deployed**: per-set notes, editable workout times (API requires TZ-explicit ISO), target-sets surfaced as session progress (ring + pips), Athletic Glow design treatment, skeleton loading states, iOS input-zoom fix.
 - **Health tracking (Plan 3) shipped and deployed**: meals with deduped autocomplete library + favorites, sleep (woke-day semantics), body measurements, day view with totals vs editable targets, all four quick-log actions live.
-- Pending plans: Plan 4 trends + Today dashboard + Playwright E2E. Plans live in `docs/superpowers/plans/`.
+- **Trends + Today (Plan 4) shipped and deployed**: strength progression (Epley est. 1RM), weekly volume by muscle group, nutrition vs body overlay, sleep bars — all client-bucketed in device tz; Today dashboard; Playwright E2E (3 specs) with hard-gated /auth/test-login (E2E_TEST_LOGIN flag, never in prod). Plans live in `docs/superpowers/plans/`.
 - Phase 2 (after v1): MCP server, AI coach, iOS shell (Capacitor + HealthKit), offline queue.
 
 # Core Features
