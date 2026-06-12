@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import { authRoutes } from './auth/google';
 import { requireAuth } from './auth/middleware';
 import { exercisesRoutes } from './routes/exercises';
+import { measurementsRoutes } from './routes/measurements';
 import { mealsRoutes } from './routes/meals';
 import { meRoutes } from './routes/me';
+import { sleepRoutes } from './routes/sleep';
 import { templatesRoutes } from './routes/templates';
 import { workoutsRoutes } from './routes/workouts';
 import type { AppEnv } from './types';
@@ -15,7 +17,9 @@ export const apiApp = new Hono<AppEnv>()
   .route('/exercises', exercisesRoutes)
   .route('/templates', templatesRoutes)
   .route('/workouts', workoutsRoutes)
-  .route('/meals', mealsRoutes);
+  .route('/meals', mealsRoutes)
+  .route('/sleep', sleepRoutes)
+  .route('/measurements', measurementsRoutes);
 
 const app = new Hono<AppEnv>();
 
