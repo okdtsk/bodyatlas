@@ -175,6 +175,8 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       });
       if (!workout) return c.json(notFound, 404);
       const { exerciseId } = c.req.valid('json');
+      // Unlike templates, archived exercises may still be added mid-workout;
+      // archiving only prevents new template references.
       const exercise = await db.query.exercises.findFirst({
         where: and(
           eq(schema.exercises.id, exerciseId),
