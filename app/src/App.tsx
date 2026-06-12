@@ -1,5 +1,4 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
-import type { Locale, Theme } from '@bodyatlas/shared';
 import { AppLayout } from './components/AppLayout';
 import { detectBrowserLocale, I18nProvider, useI18n } from './i18n';
 import { useMe } from './lib/useMe';
@@ -23,8 +22,8 @@ function Loading() {
 export function App() {
   const { data: me, isPending } = useMe();
 
-  const locale = (me?.locale as Locale | undefined) ?? detectBrowserLocale();
-  const theme = (me?.theme as Theme | undefined) ?? storedTheme() ?? 'gym-dark';
+  const locale = me?.locale ?? detectBrowserLocale();
+  const theme = me?.theme ?? storedTheme() ?? 'gym-dark';
 
   return (
     <I18nProvider locale={locale}>
