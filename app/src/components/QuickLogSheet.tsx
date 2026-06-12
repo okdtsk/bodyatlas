@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useI18n, type MessageKey } from '../i18n';
 
 const ACTIONS: { key: MessageKey; icon: string }[] = [
@@ -9,9 +10,19 @@ const ACTIONS: { key: MessageKey; icon: string }[] = [
 
 export function QuickLogSheet({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label={t('quickLog.title')}
       onClick={onClose}
       style={{
