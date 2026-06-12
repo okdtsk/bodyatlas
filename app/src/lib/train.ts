@@ -5,13 +5,10 @@ import { api } from './api';
 
 // ---------- helpers ----------
 
-// The Hono RPC client returns Promise<ClientResponse<ErrorUnion | SuccessType>>.
-// TypeScript cannot unify the union json() overloads, so we accept `Promise<any>`
-// and let callers rely on the inferred return type from the RPC call site.
-// ADAPTATION: expectOk accepts Promise<any> because ClientResponse union types
-// (e.g. 200 success | 422 error | 404 not-found) do not match a typed constraint;
-// the RPC type error was: "Type 'Promise<ClientResponse<ErrorShape | SuccessShape>>'
-// is not assignable to parameter of type 'Promise<{ok; status; json(): Promise<T>}>'"
+// The Hono RPC client returns Promise<ClientResponse<Success | ErrorUnion>>;
+// json() on the union is not expressible as a single generic constraint, so we
+// accept Promise<any> here and pin the result type at each call site with
+// InferResponseType<..., 200> — the worker types stay the single source of truth.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function expectOk<T>(promise: Promise<any>): Promise<T> {
   const res = await promise;
@@ -21,36 +18,22 @@ async function expectOk<T>(promise: Promise<any>): Promise<T> {
 
 // ---------- exercises ----------
 
+type ExerciseList = InferResponseType<typeof api.exercises.$get, 200>;
+
 export function useExercises(q: string, includeArchived = false) {
   return useQuery({
     queryKey: ['exercises', q, includeArchived],
-    queryFn: async () => {
-      // ADAPTATION: exercises GET has no zValidator for query, so RPC type has
-      // no typed query shape. We call fetch directly to pass arbitrary query params.
-      const params = new URLSearchParams();
-      if (q) params.set('q', q);
-      if (includeArchived) params.set('includeArchived', 'true');
-      const qs = params.toString();
-      const res = await fetch(`/api/exercises${qs ? `?${qs}` : ''}`);
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      return res.json() as Promise<
-        {
-          id: string;
-          userId: string | null;
-          nameEn: string;
-          nameJa: string | null;
-          type: 'strength' | 'bodyweight' | 'cardio';
-          muscleGroup: string;
-          equipment: string;
-          isArchived: boolean;
-        }[]
-      >;
-    },
+    queryFn: () =>
+      expectOk<ExerciseList>(
+        api.exercises.$get({
+          query: { q: q || undefined, includeArchived: includeArchived ? 'true' : undefined },
+        }),
+      ),
     staleTime: 60_000,
   });
 }
 
-export type Exercise = NonNullable<ReturnType<typeof useExercises>['data']>[number];
+export type Exercise = ExerciseList[number];
 
 export function useCreateExercise() {
   const qc = useQueryClient();
@@ -70,13 +53,19 @@ export function useArchiveExercise() {
   });
 }
 
+type LastSetsResponse = InferResponseType<
+  (typeof api.exercises)[':id']['last-sets']['$get'],
+  200
+>;
+
 export function useLastSets(exerciseId: string, excludeWorkoutId?: string) {
   return useQuery({
     queryKey: ['last-sets', exerciseId, excludeWorkoutId ?? null],
     queryFn: async () => {
-      // ADAPTATION: last-sets GET has no zValidator for query, so the RPC type
-      // for this nested route does not expose a query parameter shape.
-      // We call fetch directly to pass excludeWorkoutId as a query param.
+      // ADAPTATION (verified): the generated RPC input type for this nested
+      // route is `{ param: { id } }` only — it rejects a `query` key — so we
+      // use raw fetch for the request. The response type is still derived from
+      // the worker via InferResponseType so the contract stays in one place.
       const params = new URLSearchParams();
       if (excludeWorkoutId) params.set('excludeWorkoutId', excludeWorkoutId);
       const qs = params.toString();
@@ -84,23 +73,7 @@ export function useLastSets(exerciseId: string, excludeWorkoutId?: string) {
         `/api/exercises/${exerciseId}/last-sets${qs ? `?${qs}` : ''}`,
       );
       if (!res.ok) throw new Error(`API error ${res.status}`);
-      return res.json() as Promise<
-        | {
-            workoutId: string;
-            startedAt: string;
-            sets: {
-              id: string;
-              workoutExerciseId: string;
-              position: number;
-              weightKg: number | null;
-              reps: number | null;
-              rpe: number | null;
-              durationSec: number | null;
-              distanceM: number | null;
-            }[];
-          }
-        | null
-      >;
+      return res.json() as Promise<LastSetsResponse>;
     },
     staleTime: 5 * 60_000,
   });
@@ -108,24 +81,16 @@ export function useLastSets(exerciseId: string, excludeWorkoutId?: string) {
 
 // ---------- templates ----------
 
-// ADAPTATION: InferResponseType used to extract the 200-OK shape from the
-// typed RPC union so Template / ActiveWorkout type aliases resolve correctly.
-// Without it, expectOk<T>(Promise<any>) leaves T=unknown and the alias becomes {}.
 type TemplateList = InferResponseType<typeof api.templates.$get, 200>;
-type TemplateRow = TemplateList[number];
 
 export function useTemplates() {
   return useQuery({
     queryKey: ['templates'],
-    queryFn: async (): Promise<TemplateList> => {
-      const res = await api.templates.$get();
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      return res.json() as Promise<TemplateList>;
-    },
+    queryFn: () => expectOk<TemplateList>(api.templates.$get()),
   });
 }
 
-export type Template = TemplateRow;
+export type Template = TemplateList[number];
 
 export function useSaveTemplate(id?: string) {
   const qc = useQueryClient();
@@ -154,41 +119,26 @@ type ActiveResponse = InferResponseType<typeof api.workouts.active.$get, 200>;
 export function useActiveWorkout() {
   return useQuery({
     queryKey: ['workouts', 'active'],
-    queryFn: async (): Promise<ActiveResponse> => {
-      const res = await api.workouts.active.$get();
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      return res.json() as Promise<ActiveResponse>;
-    },
+    queryFn: () => expectOk<ActiveResponse>(api.workouts.active.$get()),
   });
 }
 
 export type ActiveWorkout = NonNullable<ActiveResponse['workout']>;
 
+type WorkoutList = InferResponseType<typeof api.workouts.$get, 200>;
+
 export function useWorkouts(filters: { limit?: number; exerciseId?: string } = {}) {
   return useQuery({
     queryKey: ['workouts', 'list', filters],
-    queryFn: async () => {
-      // ADAPTATION: workouts GET has no zValidator for query, so RPC type has
-      // no typed query shape. We call fetch directly.
-      const params = new URLSearchParams();
-      if (filters.limit !== undefined) params.set('limit', String(filters.limit));
-      if (filters.exerciseId) params.set('exerciseId', filters.exerciseId);
-      const qs = params.toString();
-      const res = await fetch(`/api/workouts${qs ? `?${qs}` : ''}`);
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      return res.json() as Promise<
-        {
-          id: string;
-          startedAt: string;
-          endedAt: string | null;
-          notes: string | null;
-          templateId: string | null;
-          exerciseNames: string[];
-          exerciseNamesJa: string[];
-          setCount: number;
-        }[]
-      >;
-    },
+    queryFn: () =>
+      expectOk<WorkoutList>(
+        api.workouts.$get({
+          query: {
+            limit: filters.limit !== undefined ? String(filters.limit) : undefined,
+            exerciseId: filters.exerciseId,
+          },
+        }),
+      ),
   });
 }
 
