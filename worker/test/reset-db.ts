@@ -8,6 +8,9 @@ const USER_TABLES = [
   'workouts',
   'template_exercises',
   'templates',
+  'meals',
+  'sleep_records',
+  'body_measurements',
 ];
 
 beforeEach(async () => {

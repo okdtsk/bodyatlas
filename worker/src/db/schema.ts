@@ -120,6 +120,58 @@ export const sets = sqliteTable(
   (t) => [index('idx_sets_workout_exercise').on(t.workoutExerciseId)],
 );
 
+export const meals = sqliteTable(
+  'meals',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    eatenAt: integer('eaten_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    name: text('name').notNull(),
+    calories: integer('calories'),
+    proteinG: real('protein_g'),
+    fatG: real('fat_g'),
+    carbsG: real('carbs_g'),
+    notes: text('notes'),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [index('idx_meals_user_eaten').on(t.userId, t.eatenAt)],
+);
+
+export const sleepRecords = sqliteTable(
+  'sleep_records',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    bedAt: integer('bed_at', { mode: 'timestamp' }).notNull(),
+    wokeAt: integer('woke_at', { mode: 'timestamp' }).notNull(),
+    quality: integer('quality'),
+    notes: text('notes'),
+  },
+  (t) => [index('idx_sleep_user_woke').on(t.userId, t.wokeAt)],
+);
+
+export const bodyMeasurements = sqliteTable(
+  'body_measurements',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    measuredAt: integer('measured_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    weightKg: real('weight_kg'),
+    bodyFatPct: real('body_fat_pct'),
+  },
+  (t) => [index('idx_measurements_user_measured').on(t.userId, t.measuredAt)],
+);
+
 export const workoutsRelations = relations(workouts, ({ many }) => ({
   workoutExercises: many(workoutExercises),
 }));
