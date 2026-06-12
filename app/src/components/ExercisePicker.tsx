@@ -32,7 +32,7 @@ export function ExercisePicker({
 
   const submitCreate = () => {
     create.mutate(form, {
-      onSuccess: (created) => onSelect(created as Exercise),
+      onSuccess: (created) => onSelect(created),
     });
   };
 

@@ -35,11 +35,13 @@ export function useExercises(q: string, includeArchived = false) {
 
 export type Exercise = ExerciseList[number];
 
+type CreatedExercise = InferResponseType<typeof api.exercises.$post, 201>;
+
 export function useCreateExercise() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateExercise) =>
-      expectOk(api.exercises.$post({ json: input })),
+      expectOk<CreatedExercise>(api.exercises.$post({ json: input })),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises'] }),
   });
 }
