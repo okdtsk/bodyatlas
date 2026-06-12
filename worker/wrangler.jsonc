@@ -13,10 +13,10 @@
     {
       "binding": "DB",
       "database_name": "bodyatlas",
-      "database_id": "REPLACE_AT_DEPLOY",
+      "database_id": "ef3453cf-d3cc-42ac-853e-e2e78af633c0",
       "migrations_dir": "migrations"
     }
   ],
-  "kv_namespaces": [{ "binding": "SESSIONS", "id": "REPLACE_AT_DEPLOY" }],
+  "kv_namespaces": [{ "binding": "SESSIONS", "id": "e25c68f7159e4ebaa11c04c3df74721f" }],
   "observability": { "enabled": true }
 }
