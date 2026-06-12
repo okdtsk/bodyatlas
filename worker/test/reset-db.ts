@@ -12,6 +12,7 @@ const USER_TABLES = [
   'sleep_records',
   'body_measurements',
   'api_tokens',
+  'ai_settings',
 ];
 
 beforeEach(async () => {

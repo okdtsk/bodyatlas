@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { Equipment, ExerciseType, Locale, MuscleGroup, Theme, Unit } from '@bodyatlas/shared';
+import type { AiProvider, Equipment, ExerciseType, Locale, MuscleGroup, Theme, Unit } from '@bodyatlas/shared';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -188,6 +188,21 @@ export const apiTokens = sqliteTable(
   },
   (t) => [index('idx_api_tokens_hash').on(t.tokenHash)],
 );
+
+export const aiSettings = sqliteTable('ai_settings', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  provider: text('provider').$type<AiProvider>().notNull(),
+  model: text('model').notNull(),
+  encryptedKey: text('encrypted_key').notNull(),
+  keyIv: text('key_iv').notNull(),
+  lastReview: text('last_review'),
+  lastReviewAt: integer('last_review_at', { mode: 'timestamp' }),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
 
 export const workoutsRelations = relations(workouts, ({ many }) => ({
   workoutExercises: many(workoutExercises),

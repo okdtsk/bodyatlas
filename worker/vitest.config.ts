@@ -16,6 +16,8 @@ export default defineConfig({
             TEST_MIGRATIONS: migrations,
             GOOGLE_CLIENT_ID: 'test-client-id',
             GOOGLE_CLIENT_SECRET: 'test-client-secret',
+            // Fixed 32-byte base64 for testing AES-256-GCM (btoa of 32 'a's)
+            AI_KEY_SECRET: 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
             // Explicitly absent so the gate test works regardless of .dev.vars
             E2E_TEST_LOGIN: '',
           },

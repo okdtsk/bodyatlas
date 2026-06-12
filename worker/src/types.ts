@@ -4,6 +4,7 @@ export type Bindings = {
   BODYATLAS_MCP: DurableObjectNamespace;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  AI_KEY_SECRET: string;
   E2E_TEST_LOGIN?: string;
 };
 
