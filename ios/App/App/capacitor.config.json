@@ -1,0 +1,20 @@
+{
+	"appId": "com.okdtsk.bodyatlas",
+	"appName": "BodyAtlas",
+	"webDir": "app/dist/client",
+	"server": {
+		"url": "https://bodyatlas.okdtsk.dev",
+		"allowNavigation": [
+			"bodyatlas.okdtsk.dev",
+			"accounts.google.com",
+			"*.google.com"
+		]
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"packageClassList": [
+			"HealthSyncPlugin"
+		]
+	},
+	"packageClassList": []
+}

@@ -8,7 +8,12 @@ const config: CapacitorConfig = {
     url: 'https://bodyatlas.okdtsk.dev',
     allowNavigation: ['bodyatlas.okdtsk.dev', 'accounts.google.com', '*.google.com'],
   },
-  ios: { contentInset: 'automatic' },
+  ios: {
+    contentInset: 'automatic',
+    // Custom app-target plugins are NOT auto-discovered; they must be listed
+    // here so the bridge registers them (ObjC class name, not jsName).
+    packageClassList: ['HealthSyncPlugin'],
+  },
 };
 
 export default config;

@@ -62,6 +62,10 @@ public class HealthSyncPlugin: CAPPlugin, CAPBridgedPlugin {
         isoFormatter.formatOptions = [.withInternetDateTime]
 
         let group = DispatchGroup()
+        // HKSampleQuery result handlers run on anonymous background threads;
+        // all writes to the shared state below are serialized through this queue,
+        // and group.notify runs on the same queue so the reads are fenced too.
+        let syncQueue = DispatchQueue(label: "healthsync.querySamples")
         var sleepResults: [[String: Any]] = []
         var weightResults: [[String: Any]] = []
         var bodyFatResults: [[String: Any]] = []
@@ -73,10 +77,13 @@ public class HealthSyncPlugin: CAPPlugin, CAPBridgedPlugin {
             let sleepQuery = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
                 defer { group.leave() }
                 if let error = error {
-                    queryError = "Sleep query failed: \(error.localizedDescription)"
+                    syncQueue.sync {
+                        queryError = "Sleep query failed: \(error.localizedDescription)"
+                    }
                     return
                 }
                 guard let samples = samples as? [HKCategorySample] else { return }
+                var rows: [[String: Any]] = []
                 for sample in samples {
                     let value: String?
                     switch HKCategoryValueSleepAnalysis(rawValue: sample.value) {
@@ -90,11 +97,14 @@ public class HealthSyncPlugin: CAPPlugin, CAPBridgedPlugin {
                         value = nil
                     }
                     guard let v = value else { continue }
-                    sleepResults.append([
+                    rows.append([
                         "start": isoFormatter.string(from: sample.startDate),
                         "end": isoFormatter.string(from: sample.endDate),
                         "value": v
                     ])
+                }
+                syncQueue.sync {
+                    sleepResults = rows
                 }
             }
             healthStore.execute(sleepQuery)
@@ -106,16 +116,21 @@ public class HealthSyncPlugin: CAPPlugin, CAPBridgedPlugin {
             let weightQuery = HKSampleQuery(sampleType: bodyMassType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
                 defer { group.leave() }
                 if let error = error {
-                    queryError = "Weight query failed: \(error.localizedDescription)"
+                    syncQueue.sync {
+                        queryError = "Weight query failed: \(error.localizedDescription)"
+                    }
                     return
                 }
                 guard let samples = samples as? [HKQuantitySample] else { return }
                 let kgUnit = HKUnit.gramUnit(with: .kilo)
-                for sample in samples {
-                    weightResults.append([
+                let rows: [[String: Any]] = samples.map { sample in
+                    [
                         "date": isoFormatter.string(from: sample.startDate),
                         "kg": sample.quantity.doubleValue(for: kgUnit)
-                    ])
+                    ]
+                }
+                syncQueue.sync {
+                    weightResults = rows
                 }
             }
             healthStore.execute(weightQuery)
@@ -127,22 +142,30 @@ public class HealthSyncPlugin: CAPPlugin, CAPBridgedPlugin {
             let bodyFatQuery = HKSampleQuery(sampleType: bodyFatType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
                 defer { group.leave() }
                 if let error = error {
-                    queryError = "Body fat query failed: \(error.localizedDescription)"
+                    syncQueue.sync {
+                        queryError = "Body fat query failed: \(error.localizedDescription)"
+                    }
                     return
                 }
                 guard let samples = samples as? [HKQuantitySample] else { return }
                 let percentUnit = HKUnit.percent()
-                for sample in samples {
-                    bodyFatResults.append([
+                let rows: [[String: Any]] = samples.map { sample in
+                    [
                         "date": isoFormatter.string(from: sample.startDate),
                         "pct": sample.quantity.doubleValue(for: percentUnit) * 100.0
-                    ])
+                    ]
+                }
+                syncQueue.sync {
+                    bodyFatResults = rows
                 }
             }
             healthStore.execute(bodyFatQuery)
         }
 
-        group.notify(queue: .main) {
+        // Notify on syncQueue: reads happen on the same serial queue as all
+        // writes, so the final state is fully visible. Capacitor accepts
+        // resolve/reject from any thread.
+        group.notify(queue: syncQueue) {
             if let error = queryError {
                 call.reject(error)
                 return
