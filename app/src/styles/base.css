@@ -121,3 +121,107 @@ button {
     bottom: 24px;
   }
 }
+
+/* --- utility layer (Plan 2b) --- */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.card.tappable {
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.section-title {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 16px 0 8px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--negative);
+  color: var(--negative);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.input {
+  padding: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+}
+
+.input-num {
+  width: 72px;
+  text-align: center;
+}
+
+.error-text {
+  color: var(--negative);
+  font-size: 13px;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 20;
+}
+
+.sheet-panel {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-top: 2px solid var(--accent);
+  padding: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  max-height: 80dvh;
+  overflow-y: auto;
+}
