@@ -274,6 +274,33 @@ describe('complete() — Gemini', () => {
     expect(body.generationConfig).toEqual({ maxOutputTokens: 300 });
   });
 
+  it('percent-encodes the model in the URL path segment', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch');
+    spy.mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text: 'ok' }] } }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    await complete({
+      provider: 'gemini',
+      model: 'gemini-1.5-pro?key=evil/../path',
+      apiKey: 'AIza-gemini-test-key-1234567',
+      system: 'sys',
+      prompt: 'prompt',
+      maxTokens: 100,
+    });
+
+    const [url] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro%3Fkey%3Devil%2F..%2Fpath:generateContent',
+    );
+    expect(url).not.toContain('?');
+  });
+
   it('throws AiError on non-OK response without key leakage', async () => {
     const geminiKey = 'AIza-super-secret-gemini-key';
     mockFetchText(`API_KEY_INVALID: ${geminiKey} not authorized`, 403);

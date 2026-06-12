@@ -9,20 +9,9 @@ export type AiSettingsSaved = InferResponseType<typeof api.ai.settings.$put, 200
 export type AiTestResult = InferResponseType<typeof api.ai.test.$post, 200>;
 export type AiReview = InferResponseType<typeof api.ai.review.$get, 200>;
 
-// Inline types for routes with hyphens (bracket notation not valid in TS generics)
-export type EstimateResult = {
-  calories: number;
-  proteinG: number;
-  fatG: number;
-  carbsG: number;
-  confidence: 'low' | 'medium' | 'high';
-  note?: string;
-};
-
-export type CoachReviewResult = {
-  review: string;
-  generatedAt: string;
-};
+// Hyphenated routes need bracket access on the parenthesized typeof expression
+export type EstimateResult = InferResponseType<(typeof api.ai)['estimate-meal']['$post'], 200>;
+export type CoachReviewResult = InferResponseType<(typeof api.ai)['coach-review']['$post'], 200>;
 
 export function useAiSettings() {
   return useQuery({

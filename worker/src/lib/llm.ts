@@ -70,7 +70,8 @@ export async function complete(opts: CompleteOptions): Promise<string> {
     };
   } else {
     // gemini
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    // Percent-encode the user-supplied model so it cannot inject path segments or query params.
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     headers = {
       'x-goog-api-key': apiKey,
       'content-type': 'application/json',

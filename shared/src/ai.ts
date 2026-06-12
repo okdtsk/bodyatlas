@@ -23,7 +23,7 @@ export const estimateResultSchema = z.object({
   fatG: z.number().min(0).max(1000),
   carbsG: z.number().min(0).max(1000),
   confidence: z.enum(['low', 'medium', 'high']),
-  note: z.string().max(150).optional(),
+  note: z.string().max(100).optional(),
 });
 
 export type EstimateResult = z.infer<typeof estimateResultSchema>;

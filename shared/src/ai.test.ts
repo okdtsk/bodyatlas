@@ -163,10 +163,16 @@ describe('estimateResultSchema', () => {
     expect(estimateResultSchema.safeParse({ ...validResult, confidence: 'very-high' }).success).toBe(false);
   });
 
-  it('rejects note longer than 150 characters', () => {
+  it('rejects note longer than 100 characters', () => {
     expect(
-      estimateResultSchema.safeParse({ ...validResult, note: 'n'.repeat(151) }).success,
+      estimateResultSchema.safeParse({ ...validResult, note: 'n'.repeat(101) }).success,
     ).toBe(false);
+  });
+
+  it('accepts a note of exactly 100 characters', () => {
+    expect(
+      estimateResultSchema.safeParse({ ...validResult, note: 'n'.repeat(100) }).success,
+    ).toBe(true);
   });
 
   it('accepts all three confidence levels', () => {
