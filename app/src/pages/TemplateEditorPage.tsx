@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useI18n } from '../i18n';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { Skeleton } from '../components/Skeleton';
 import { exerciseName } from '../lib/format';
 import { useDeleteTemplate, useSaveTemplate, useTemplates, type Exercise } from '../lib/train';
 
@@ -40,7 +41,12 @@ export function TemplateEditorPage() {
     return <p className="muted">{t('error.generic')}</p>;
   }
   if (id && !loaded && templates === undefined) {
-    return <p className="muted">…</p>;
+    return (
+      <section className="stack">
+        <h1>{t('train.editTemplate')}</h1>
+        <Skeleton height={72} count={3} />
+      </section>
+    );
   }
 
   const move = (index: number, delta: -1 | 1) => {
@@ -83,7 +89,7 @@ export function TemplateEditorPage() {
 
       <div className="stack" style={{ gap: 4 }}>
         {rows.map((row, i) => (
-          <div key={`${row.exercise.id}-${i}`} className="card row" style={{ justifyContent: 'space-between' }}>
+          <div key={`${row.exercise.id}-${i}`} className="glow-card row" style={{ justifyContent: 'space-between' }}>
             <span>{exerciseName(row.exercise, locale)}</span>
             <span className="row">
               <input

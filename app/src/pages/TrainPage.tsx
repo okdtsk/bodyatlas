@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
+import { Skeleton } from '../components/Skeleton';
 import { formatDay } from '../lib/format';
 import { useActiveWorkout, useStartWorkout, useTemplates, useWorkouts } from '../lib/train';
 
@@ -7,8 +8,8 @@ export function TrainPage() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const { data: activeData } = useActiveWorkout();
-  const { data: templates } = useTemplates();
-  const { data: recent } = useWorkouts({ limit: 10 });
+  const { data: templates, isPending: templatesPending } = useTemplates();
+  const { data: recent, isPending: recentPending } = useWorkouts({ limit: 10 });
   const start = useStartWorkout();
 
   const active = activeData?.workout ?? null;
@@ -24,12 +25,13 @@ export function TrainPage() {
       {active && (
         <Link
           to="/train/session"
-          className="card tappable"
-          style={{ borderColor: 'var(--accent)', textDecoration: 'none', color: 'var(--text)' }}
+          className="glow-card is-active tappable"
+          style={{ textDecoration: 'none', color: 'var(--text)' }}
         >
+          <div className="eyebrow">{t('train.inProgress')}</div>
           <strong style={{ color: 'var(--accent)' }}>{t('train.resume')}</strong>
           <div className="muted">
-            {t('train.inProgress')} · {t('train.startedAt')}{' '}
+            {t('train.startedAt')}{' '}
             {new Date(active.startedAt).toLocaleTimeString()}
           </div>
         </Link>
@@ -56,8 +58,9 @@ export function TrainPage() {
 
           <div className="section-title">{t('train.fromTemplate')}</div>
           <div className="stack">
+            {templatesPending && <Skeleton height={72} count={3} />}
             {templates?.map((tpl) => (
-              <div key={tpl.id} className="card row" style={{ justifyContent: 'space-between' }}>
+              <div key={tpl.id} className="glow-card row" style={{ justifyContent: 'space-between' }}>
                 <button
                   className="btn"
                   style={{ flex: 1, textAlign: 'left', background: 'transparent', border: 'none' }}
@@ -81,17 +84,18 @@ export function TrainPage() {
 
       <div className="section-title">{t('train.recent')}</div>
       <div className="stack">
+        {recentPending && <Skeleton height={72} count={3} />}
         {recent?.length === 0 && <p className="muted">{t('train.noWorkouts')}</p>}
         {recent?.map((w) => (
           <Link
             key={w.id}
             to={`/train/workouts/${w.id}`}
-            className="card tappable"
+            className="glow-card tappable"
             style={{ textDecoration: 'none', color: 'var(--text)' }}
           >
             <strong>{formatDay(String(w.startedAt), locale)}</strong>
             <div className="muted">
-              {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(' · ')} — {w.setCount}{' '}
+              {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(' · ')} — <strong>{w.setCount}</strong>{' '}
               {t('train.sets')}
             </div>
           </Link>

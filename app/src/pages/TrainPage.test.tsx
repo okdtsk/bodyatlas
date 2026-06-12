@@ -65,6 +65,7 @@ describe('TrainPage', () => {
     });
     renderTrain();
     expect(await screen.findByText(/Back Squat/)).toBeInTheDocument();
-    expect(screen.getByText(/5 sets/)).toBeInTheDocument();
+    // setCount is wrapped in <strong>, so match the .muted div's full text content
+    expect(screen.getByText((_, el) => el?.className === 'muted' && (el?.textContent ?? '').includes('5') && (el?.textContent ?? '').includes('sets'))).toBeInTheDocument();
   });
 });

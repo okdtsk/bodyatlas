@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
+import { Skeleton } from '../components/Skeleton';
 import { exerciseName } from '../lib/format';
 import { useArchiveExercise, useExercises } from '../lib/train';
 
 export function ExercisesPage() {
   const { t, locale } = useI18n();
   const [q, setQ] = useState('');
-  const { data: exercises } = useExercises(q);
+  const { data: exercises, isPending } = useExercises(q);
   const archive = useArchiveExercise();
 
   return (
@@ -21,8 +22,9 @@ export function ExercisesPage() {
         onChange={(e) => setQ(e.target.value)}
       />
       <div className="stack" style={{ gap: 4 }}>
+        {isPending && <Skeleton height={72} count={3} />}
         {exercises?.map((ex) => (
-          <div key={ex.id} className="card row" style={{ justifyContent: 'space-between' }}>
+          <div key={ex.id} className="glow-card row" style={{ justifyContent: 'space-between' }}>
             <Link to={`/train/exercises/${ex.id}`} style={{ color: 'var(--text)', textDecoration: 'none', flex: 1 }}>
               <strong>{exerciseName(ex, locale)}</strong>
               <div className="muted">
