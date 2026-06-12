@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { LineChart } from '../components/charts/LineChart';
 import { Skeleton } from '../components/Skeleton';
 import { useI18n } from '../i18n';
@@ -8,6 +9,7 @@ import { sleepDurationLabel } from '../lib/format';
 import { useSleep } from '../lib/health';
 import { useExercises } from '../lib/train';
 import { useNutritionBodyTrend, useStrengthTrend, useVolumeTrend } from '../lib/trends';
+import { useAiSettings, useAiReview, useCoachReview } from '../lib/ai';
 
 const LS_KEY = 'ba_trend_exercise';
 
@@ -30,6 +32,26 @@ export function TrendsPage() {
   const volumeData = useVolumeTrend(fromIso);
   const nutritionBodyData = useNutritionBodyTrend(fromIso);
   const sleepData = useSleep(fromIso, nowIso);
+
+  const { data: aiSettings } = useAiSettings();
+  const { data: aiReview } = useAiReview();
+  const coachReview = useCoachReview();
+
+  const hasKey = (aiSettings as { hasKey?: boolean } | undefined)?.hasKey ?? false;
+  const [coachError, setCoachError] = useState(false);
+  const [localReview, setLocalReview] = useState<{ review: string; generatedAt: string } | null>(null);
+
+  async function handleGenerate() {
+    setCoachError(false);
+    try {
+      const result = await coachReview.mutateAsync();
+      setLocalReview(result);
+    } catch {
+      setCoachError(true);
+    }
+  }
+
+  const displayReview = localReview ?? (aiReview as { review?: string | null; generatedAt?: string | null } | undefined);
 
   function handleExerciseChange(id: string) {
     setExerciseId(id);
@@ -129,6 +151,38 @@ export function TrendsPage() {
 
   return (
     <section style={{ padding: '16px 16px 80px' }}>
+      {/* Coach card */}
+      <div className="glow-card" style={{ marginBottom: 20 }}>
+        <div className="section-title">{t('ai.review')}</div>
+        {!hasKey ? (
+          <p className="muted">
+            {t('ai.notConfigured')}{' '}
+            <Link to="/settings" style={{ color: 'var(--accent)' }}>
+              Settings
+            </Link>
+          </p>
+        ) : (
+          <>
+            {displayReview?.review ? (
+              <p style={{ whiteSpace: 'pre-line', marginBottom: 12 }}>{displayReview.review}</p>
+            ) : (
+              <p className="muted" style={{ marginBottom: 12 }}>{t('ai.noReview')}</p>
+            )}
+            {coachError && (
+              <p style={{ color: 'var(--negative)', marginBottom: 8 }}>{t('ai.error')}</p>
+            )}
+            <button
+              type="button"
+              className="btn"
+              disabled={coachReview.isPending}
+              onClick={handleGenerate}
+            >
+              {coachReview.isPending ? t('ai.generating') : t('ai.generate')}
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Range chips */}
       <div className="row" style={{ gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {RANGES.map((r) => (

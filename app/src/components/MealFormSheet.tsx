@@ -10,6 +10,7 @@ import {
   type Meal,
   type MealSearchResult,
 } from '../lib/health';
+import { useAiSettings, useEstimateMeal } from '../lib/ai';
 
 export interface MealFormSheetProps {
   defaultDate: Date;
@@ -49,6 +50,30 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
   const updateMeal = useUpdateMeal();
   const deleteMeal = useDeleteMeal();
   const toggleFavorite = useToggleFavorite();
+
+  const { data: aiSettings } = useAiSettings();
+  const estimateMeal = useEstimateMeal();
+  const [estimateError, setEstimateError] = useState('');
+  const [confidence, setConfidence] = useState<'low' | 'medium' | 'high' | null>(null);
+
+  const hasKey = (aiSettings as { hasKey?: boolean } | undefined)?.hasKey ?? false;
+
+  async function handleEstimate() {
+    const description = [name, notes].filter(Boolean).join(' ').trim();
+    if (!description) return;
+    setEstimateError('');
+    setConfidence(null);
+    try {
+      const result = await estimateMeal.mutateAsync(description);
+      setKcal(String(Math.round(result.calories)));
+      setProtein(String(result.proteinG));
+      setFat(String(result.fatG));
+      setCarbs(String(result.carbsG));
+      setConfidence(result.confidence);
+    } catch {
+      setEstimateError(t('ai.error'));
+    }
+  }
 
   const { data: searchResults } = useMealSearch(isCreate ? name : '');
 
@@ -118,23 +143,37 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
         aria-label={isCreate ? t('health.addMeal') : t('common.edit')}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Name field with autocomplete */}
+        {/* Name field with autocomplete and ✨ estimate */}
         <label className="stack" style={{ gap: 4, position: 'relative' }}>
           {t('health.mealName')}
-          <input
-            className="input"
-            aria-label={t('health.mealName')}
-            autoFocus={isCreate}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setSuggestionsOpen(true);
-            }}
-            onBlur={() => {
-              // Delay so click on suggestion registers first
-              setTimeout(() => setSuggestionsOpen(false), 150);
-            }}
-          />
+          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+            <input
+              className="input"
+              aria-label={t('health.mealName')}
+              autoFocus={isCreate}
+              value={name}
+              style={{ flex: 1 }}
+              onChange={(e) => {
+                setName(e.target.value);
+                setSuggestionsOpen(true);
+              }}
+              onBlur={() => {
+                // Delay so click on suggestion registers first
+                setTimeout(() => setSuggestionsOpen(false), 150);
+              }}
+            />
+            {hasKey && (
+              <button
+                type="button"
+                className="btn"
+                disabled={estimateMeal.isPending}
+                onClick={handleEstimate}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {estimateMeal.isPending ? t('ai.estimating') : `✨ ${t('ai.estimate')}`}
+              </button>
+            )}
+          </div>
           {suggestions.length > 0 && (
             <div className="stack" style={{ gap: 2 }}>
               {suggestions.map((s) => (
@@ -221,6 +260,13 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
             onChange={(e) => setNotes(e.target.value)}
           />
         </label>
+
+        {confidence && (
+          <p className="muted" style={{ fontSize: '0.8rem' }}>
+            {t(`ai.confidence.${confidence}` as Parameters<typeof t>[0])}
+          </p>
+        )}
+        {estimateError && <p className="error-text">{estimateError}</p>}
 
         {error && <p className="error-text">{error}</p>}
 

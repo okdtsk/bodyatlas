@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { LOCALES, THEMES, type UpdateMe } from '@bodyatlas/shared';
+import { LOCALES, THEMES, type UpdateMe, AI_PROVIDERS, type AiProvider } from '@bodyatlas/shared';
 import { useI18n, type MessageKey } from '../i18n';
 import { api } from '../lib/api';
 import { useCreateToken, useRevokeToken, useTokens, type CreatedToken } from '../lib/tokens';
+import { useAiSettings, useSaveAiSettings, useDeleteAiSettings, useTestAi } from '../lib/ai';
 import { useMe } from '../lib/useMe';
 
 export function SettingsPage() {
@@ -28,6 +29,86 @@ export function SettingsPage() {
 
   const [newTokenName, setNewTokenName] = useState('');
   const [createdToken, setCreatedToken] = useState<CreatedToken | null>(null);
+
+  // AI coach state
+  const { data: aiSettings } = useAiSettings();
+  const saveAiSettings = useSaveAiSettings();
+  const deleteAiSettings = useDeleteAiSettings();
+  const testAi = useTestAi();
+
+  // Tracks user-defined model; undefined means "auto-default based on provider"
+  const [aiProvider, setAiProvider] = useState<AiProvider | ''>('');
+  const [aiModel, setAiModel] = useState('');
+  const [aiKey, setAiKey] = useState('');
+  const [aiModelTouched, setAiModelTouched] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+
+  function getDefaultModel(provider: AiProvider | ''): string {
+    if (provider === 'claude') return 'claude-opus-4-8';
+    return '';
+  }
+
+  function handleProviderChange(provider: AiProvider | '') {
+    setAiProvider(provider);
+    if (!aiModelTouched) {
+      setAiModel(getDefaultModel(provider));
+    }
+  }
+
+  async function handleAiSave() {
+    if (!aiProvider || !aiModel) return;
+    const input: { provider: AiProvider; model: string; apiKey?: string } = {
+      provider: aiProvider,
+      model: aiModel,
+    };
+    if (aiKey.trim()) {
+      input.apiKey = aiKey.trim();
+    }
+    try {
+      await saveAiSettings.mutateAsync(input);
+      setAiKey('');
+      setTestStatus('idle');
+    } catch {
+      // error handled by mutation state
+    }
+  }
+
+  async function handleAiTest() {
+    setTestStatus('idle');
+    try {
+      await testAi.mutateAsync();
+      setTestStatus('ok');
+    } catch {
+      setTestStatus('error');
+    }
+  }
+
+  async function handleAiDisconnect() {
+    if (!window.confirm(t('ai.disconnect') + '?')) return;
+    try {
+      await deleteAiSettings.mutateAsync();
+      setAiProvider('');
+      setAiModel('');
+      setAiKey('');
+      setAiModelTouched(false);
+      setTestStatus('idle');
+    } catch {
+      // error handled by mutation state
+    }
+  }
+
+  // Initialize form from stored settings when loaded
+  const currentProvider = (aiSettings as { provider?: AiProvider | null } | undefined)?.provider;
+  const currentModel = (aiSettings as { model?: string } | undefined)?.model;
+  const hasKey = (aiSettings as { hasKey?: boolean } | undefined)?.hasKey ?? false;
+
+  // Sync provider/model from server settings on first load (if form is empty)
+  if (currentProvider && !aiProvider) {
+    setAiProvider(currentProvider);
+    if (!aiModelTouched && currentModel) {
+      setAiModel(currentModel);
+    }
+  }
 
   if (!me) return null;
 
@@ -249,6 +330,129 @@ export function SettingsPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* AI coach section */}
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: '1rem', marginBottom: 12 }}>{t('ai.title')}</h2>
+
+        <label style={{ display: 'block', marginBottom: 12 }}>
+          {t('ai.provider')}
+          <select
+            aria-label={t('ai.provider')}
+            style={fieldStyle}
+            value={aiProvider}
+            onChange={(e) => handleProviderChange(e.target.value as AiProvider | '')}
+          >
+            <option value="">—</option>
+            {AI_PROVIDERS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'block', marginBottom: 12 }}>
+          {t('ai.model')}
+          <input
+            aria-label={t('ai.model')}
+            style={fieldStyle}
+            value={aiModel}
+            placeholder={
+              aiProvider === 'openai'
+                ? 'e.g. gpt-…'
+                : aiProvider === 'gemini'
+                  ? 'e.g. gemini-…'
+                  : ''
+            }
+            onChange={(e) => {
+              setAiModel(e.target.value);
+              setAiModelTouched(true);
+            }}
+          />
+        </label>
+
+        <label style={{ display: 'block', marginBottom: 4 }}>
+          {t('ai.apiKey')}
+          <input
+            aria-label={t('ai.apiKey')}
+            type="password"
+            style={fieldStyle}
+            value={aiKey}
+            onChange={(e) => setAiKey(e.target.value)}
+            placeholder={hasKey ? '••••••••' : ''}
+          />
+        </label>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+          {t('ai.apiKeyHint')}
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+          <button
+            type="button"
+            disabled={
+              !aiProvider ||
+              !aiModel.trim() ||
+              (!hasKey && !aiKey.trim()) ||
+              saveAiSettings.isPending
+            }
+            onClick={handleAiSave}
+            style={{
+              padding: '10px 16px',
+              background: 'var(--surface-2)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              opacity: (!aiProvider || !aiModel.trim() || (!hasKey && !aiKey.trim())) ? 0.5 : 1,
+            }}
+          >
+            {t('ai.save')}
+          </button>
+
+          {hasKey && (
+            <>
+              <button
+                type="button"
+                disabled={testAi.isPending}
+                onClick={handleAiTest}
+                style={{
+                  padding: '10px 16px',
+                  background: 'var(--surface-2)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('ai.test')}
+              </button>
+              <button
+                type="button"
+                disabled={deleteAiSettings.isPending}
+                onClick={handleAiDisconnect}
+                style={{
+                  padding: '10px 16px',
+                  background: 'var(--surface-2)',
+                  color: 'var(--negative)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('ai.disconnect')}
+              </button>
+            </>
+          )}
+        </div>
+
+        {testStatus === 'ok' && (
+          <p style={{ color: 'var(--positive)' }}>{t('ai.testOk')}</p>
+        )}
+        {testStatus === 'error' && (
+          <p style={{ color: 'var(--negative)' }}>{t('ai.error')}</p>
         )}
       </section>
 
