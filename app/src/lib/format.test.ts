@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exerciseName, formatSet, trimNum } from './format';
+import { exerciseName, formatSet, toLocalInputValue, trimNum, weightDelta } from './format';
 
 describe('trimNum', () => {
   it('drops trailing zeros', () => {
@@ -33,5 +33,24 @@ describe('exerciseName', () => {
     expect(exerciseName(ex, 'ja')).toBe('ベンチプレス');
     expect(exerciseName({ nameEn: 'Custom', nameJa: null }, 'ja')).toBe('Custom');
     expect(exerciseName(ex, 'en')).toBe('Bench Press');
+  });
+});
+
+describe('weightDelta', () => {
+  const s = (weightKg: number | null) => ({ weightKg, reps: 5, rpe: null, durationSec: null, distanceM: null });
+  it('compares top weights', () => {
+    expect(weightDelta([s(82.5), s(80)], [s(80), s(80)])).toBe(2.5);
+  });
+  it('returns null when either side has no weight', () => {
+    expect(weightDelta([s(null)], [s(80)])).toBeNull();
+    expect(weightDelta([], [s(80)])).toBeNull();
+  });
+});
+
+describe('toLocalInputValue', () => {
+  it('formats an ISO string for datetime-local inputs', () => {
+    const v = toLocalInputValue('2026-06-01T09:30:00.000Z');
+    expect(v).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(new Date(v).getMinutes()).toBe(new Date('2026-06-01T09:30:00.000Z').getMinutes());
   });
 });

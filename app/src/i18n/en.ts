@@ -96,6 +96,16 @@ export const en = {
   'equip.band': 'Band',
   'equip.cardio-machine': 'Cardio machine',
   'equip.other': 'Other',
+  'set.note': 'Note',
+  'set.notePlaceholder': 'e.g. form broke down on the last rep',
+  'train.vsLast': 'vs last time',
+  'train.setsPlanned': 'sets planned',
+  'train.upNext': 'Up next',
+  'train.totalSets': 'total sets',
+  'train.elapsedMin': 'min',
+  'train.startTime': 'Start time',
+  'train.endTime': 'End time',
+  'train.invalidTimeRange': 'End time must be after start time.',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

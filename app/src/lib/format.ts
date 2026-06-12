@@ -44,3 +44,24 @@ export function formatDay(iso: string, locale: Locale): string {
     weekday: 'short',
   }).format(new Date(iso));
 }
+
+export function weightDelta(
+  current: Array<{ weightKg: number | null }>,
+  last: Array<{ weightKg: number | null }>,
+): number | null {
+  const top = (arr: Array<{ weightKg: number | null }>) =>
+    arr.reduce<number | null>(
+      (m, s) => (s.weightKg !== null && (m === null || s.weightKg > m) ? s.weightKg : m),
+      null,
+    );
+  const c = top(current);
+  const l = top(last);
+  if (c === null || l === null) return null;
+  return Math.round((c - l) * 100) / 100;
+}
+
+export function toLocalInputValue(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
