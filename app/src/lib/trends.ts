@@ -1,15 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
-import { api } from './api';
-
-// ---------- helpers ----------
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function expectOk<T>(promise: Promise<any>): Promise<T> {
-  const res = await promise;
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json() as Promise<T>;
-}
+import { api, expectOk } from './api';
 
 // ---------- strength ----------
 

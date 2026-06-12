@@ -98,3 +98,8 @@ export function sleepDurationLabel(bedIso: string, wokeIso: string): string {
   const mins = Math.round((new Date(wokeIso).getTime() - new Date(bedIso).getTime()) / 60000);
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m`;
 }
+
+/** Sum a numeric field across rows, treating null/undefined as 0. */
+export function sumBy<T>(rows: T[], pick: (row: T) => number | null | undefined): number {
+  return rows.reduce((acc, row) => acc + (pick(row) ?? 0), 0);
+}

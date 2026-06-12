@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../i18n';
-import { dayRangeIso, sleepDurationLabel } from '../lib/format';
+import { dayRangeIso, sleepDurationLabel, sumBy } from '../lib/format';
 import { useMeals, useSleep, useMeasurements } from '../lib/health';
 import { rangeFromIso } from '../lib/buckets';
 import { useActiveWorkout, useWorkouts } from '../lib/train';
@@ -9,10 +9,6 @@ import { useMe } from '../lib/useMe';
 import { MacroBars } from '../components/MacroBars';
 import { Sparkline } from '../components/charts/Sparkline';
 import { Skeleton } from '../components/Skeleton';
-
-function sum(meals: Array<{ calories?: number | null; proteinG?: number | null; fatG?: number | null; carbsG?: number | null }>, field: 'calories' | 'proteinG' | 'fatG' | 'carbsG'): number {
-  return meals.reduce((acc, m) => acc + (m[field] ?? 0), 0);
-}
 
 function isSameDay(isoA: string, isoB: string): boolean {
   const a = new Date(isoA);
@@ -32,10 +28,10 @@ export function TodayPage() {
   // Nutrition
   const mealsQuery = useMeals(todayFrom, todayTo);
   const meals = mealsQuery.data ?? [];
-  const totalKcal = sum(meals, 'calories');
-  const totalProtein = sum(meals, 'proteinG');
-  const totalFat = sum(meals, 'fatG');
-  const totalCarbs = sum(meals, 'carbsG');
+  const totalKcal = sumBy(meals, (m) => m.calories);
+  const totalProtein = sumBy(meals, (m) => m.proteinG);
+  const totalFat = sumBy(meals, (m) => m.fatG);
+  const totalCarbs = sumBy(meals, (m) => m.carbsG);
 
   // Workout
   const activeQuery = useActiveWorkout();

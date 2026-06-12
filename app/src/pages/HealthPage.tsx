@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useI18n } from '../i18n';
-import { addDays, dayRangeIso, formatDay, formatTime, sleepDurationLabel } from '../lib/format';
+import { addDays, dayRangeIso, formatDay, formatTime, sleepDurationLabel, sumBy } from '../lib/format';
 import { useMeals, useSleep, useMeasurements, type Meal, type SleepRecord, type Measurement } from '../lib/health';
 import { useMe } from '../lib/useMe';
 import { MacroBars } from '../components/MacroBars';
@@ -23,10 +23,6 @@ function isToday(d: Date): boolean {
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate()
   );
-}
-
-function sum(meals: Meal[], field: keyof Pick<Meal, 'calories' | 'proteinG' | 'fatG' | 'carbsG'>): number {
-  return meals.reduce((acc, m) => acc + (m[field] ?? 0), 0);
 }
 
 interface KcalBarProps {
@@ -92,10 +88,10 @@ export function HealthPage() {
   const sleepRecords = sleepQuery.data ?? [];
   const measurements = measurementsQuery.data ?? [];
 
-  const totalKcal = sum(meals, 'calories');
-  const totalProtein = sum(meals, 'proteinG');
-  const totalFat = sum(meals, 'fatG');
-  const totalCarbs = sum(meals, 'carbsG');
+  const totalKcal = sumBy(meals, (m) => m.calories);
+  const totalProtein = sumBy(meals, (m) => m.proteinG);
+  const totalFat = sumBy(meals, (m) => m.fatG);
+  const totalCarbs = sumBy(meals, (m) => m.carbsG);
 
   const closeSheet = () => setOpenSheet(null);
 

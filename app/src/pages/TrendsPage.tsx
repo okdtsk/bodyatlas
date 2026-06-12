@@ -48,10 +48,12 @@ export function TrendsPage() {
   const volumeBuckets = useMemo(() => {
     const rows = volumeData.data ?? [];
     return bucketSum(
-      rows.map((r) => ({ iso: r.startedAt as string, value: r.setCount })),
+      rows.map((r) => ({ iso: r.startedAt, value: r.setCount })),
       weekKey,
     );
   }, [volumeData.data]);
+
+  const maxWeekly = volumeBuckets.reduce((m, x) => Math.max(m, x.value), 0);
 
   // Last week's muscle breakdown
   const lastWeekKey = volumeBuckets.length > 0 ? volumeBuckets[volumeBuckets.length - 1]?.key : null;
@@ -60,7 +62,7 @@ export function TrendsPage() {
     const rows = volumeData.data ?? [];
     const map = new Map<string, number>();
     for (const row of rows) {
-      if (weekKey(row.startedAt as string) === lastWeekKey) {
+      if (weekKey(row.startedAt) === lastWeekKey) {
         map.set(row.muscleGroup, (map.get(row.muscleGroup) ?? 0) + row.setCount);
       }
     }
@@ -74,14 +76,14 @@ export function TrendsPage() {
       {
         points: pts
           .filter((p) => p.topWeightKg !== null)
-          .map((p) => ({ x: new Date(p.startedAt as string).getTime(), y: p.topWeightKg as number })),
+          .map((p) => ({ x: new Date(p.startedAt).getTime(), y: p.topWeightKg as number })),
         stroke: 'var(--accent)',
         dashed: false,
       },
       {
         points: pts
           .filter((p) => p.est1rm !== null)
-          .map((p) => ({ x: new Date(p.startedAt as string).getTime(), y: p.est1rm as number })),
+          .map((p) => ({ x: new Date(p.startedAt).getTime(), y: p.est1rm as number })),
         stroke: 'var(--text-muted)',
         dashed: true,
       },
@@ -98,13 +100,13 @@ export function TrendsPage() {
     const kcalBuckets = bucketSum(
       data.meals
         .filter((m) => m.calories !== null)
-        .map((m) => ({ iso: m.eatenAt as string, value: m.calories as number })),
+        .map((m) => ({ iso: m.eatenAt, value: m.calories as number })),
       localDayKey,
     );
     const kcalSeries = kcalBuckets.map((b) => ({ x: new Date(b.key).getTime(), y: b.value }));
     const weightSeries = data.measurements
       .filter((m) => m.weightKg !== null)
-      .map((m) => ({ x: new Date(m.measuredAt as string).getTime(), y: m.weightKg as number }));
+      .map((m) => ({ x: new Date(m.measuredAt).getTime(), y: m.weightKg as number }));
 
     const lastKcal = kcalSeries.length > 0 ? (kcalSeries[kcalSeries.length - 1]?.y ?? null) : null;
     const lastWeight = weightSeries.length > 0 ? (weightSeries[weightSeries.length - 1]?.y ?? null) : null;
@@ -115,8 +117,8 @@ export function TrendsPage() {
   // --- Sleep bars ---
   const sleepRecords = sleepData.data ?? [];
   const sleepDurationsMinutes = sleepRecords.map((s) => {
-    const mins = Math.round((new Date(s.wokeAt as string).getTime() - new Date(s.bedAt as string).getTime()) / 60000);
-    return { label: sleepDurationLabel(s.bedAt as string, s.wokeAt as string), mins };
+    const mins = Math.round((new Date(s.wokeAt).getTime() - new Date(s.bedAt).getTime()) / 60000);
+    return { label: sleepDurationLabel(s.bedAt, s.wokeAt), mins };
   });
   const avgSleepMins =
     sleepDurationsMinutes.length > 0
@@ -185,8 +187,7 @@ export function TrendsPage() {
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {volumeBuckets.map((b) => {
-                const pct = volumeBuckets.reduce((max, x) => Math.max(max, x.value), 0);
-                const barPct = pct > 0 ? (b.value / pct) * 100 : 0;
+                const barPct = maxWeekly > 0 ? (b.value / maxWeekly) * 100 : 0;
                 return (
                   <div key={b.key} className="row" style={{ gap: 8, alignItems: 'center' }}>
                     <span style={{ minWidth: 80, fontSize: 12, color: 'var(--text-muted)' }}>{b.key}</span>
