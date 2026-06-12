@@ -1,9 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { Pips } from '../components/Pips';
+import { ProgressRing } from '../components/ProgressRing';
 import { SetInputRow } from '../components/SetInputRow';
-import { exerciseName, formatDay, formatSet } from '../lib/format';
+import { Skeleton } from '../components/Skeleton';
+import { exerciseName, formatDay, formatSet, weightDelta } from '../lib/format';
 import {
   useActiveWorkout,
   useAddWorkoutExercise,
@@ -15,12 +18,26 @@ import {
   type ActiveWorkout,
 } from '../lib/train';
 
+/** Returns elapsed minutes since startedAt, re-renders every 30s. */
+function useElapsedMin(startedAt: string): number {
+  const [, tick] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    const id = setInterval(() => tick(), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 60_000);
+}
+
 function ExerciseBlock({
   workoutId,
   we,
+  isActive,
+  isUpNext,
 }: {
   workoutId: string;
   we: ActiveWorkout['workoutExercises'][number];
+  isActive: boolean;
+  isUpNext: boolean;
 }) {
   const { t, locale } = useI18n();
   const { data: last } = useLastSets(we.exercise.id, workoutId);
@@ -28,10 +45,25 @@ function ExerciseBlock({
   const deleteSet = useDeleteSet(workoutId, we.id);
   const removeExercise = useRemoveWorkoutExercise(workoutId);
 
+  const targetSets = (we as { targetSets?: number | null }).targetSets ?? null;
+  const delta = last ? weightDelta(we.sets, last.sets) : null;
+  const showDelta = delta !== null && delta !== 0;
+
+  const cardClass = [
+    'glow-card stack',
+    isActive ? 'is-active' : '',
+    isUpNext ? 'is-upnext' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className="card stack">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <strong>{exerciseName(we.exercise, locale)}</strong>
+    <div className={cardClass}>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+          <strong>{exerciseName(we.exercise, locale)}</strong>
+          <Pips done={we.sets.length} planned={targetSets} />
+        </div>
         <button
           className="btn"
           aria-label={`remove-${we.id}`}
@@ -45,35 +77,58 @@ function ExerciseBlock({
         </button>
       </div>
 
-      <div className="muted">
-        {last === null && t('train.noPrevious')}
-        {last && (
-          <>
-            {t('train.lastTime')} ({formatDay(String(last.startedAt), locale)}):{' '}
-            {last.sets.map((s) => formatSet(s)).join(', ')}
-          </>
-        )}
-      </div>
+      {isUpNext && targetSets !== null && (
+        <p className="muted" style={{ fontSize: 12 }}>
+          {t('train.upNext')} · {targetSets} {t('train.setsPlanned')}
+        </p>
+      )}
 
-      {we.sets.map((s) => (
-        <div key={s.id} className="row" style={{ justifyContent: 'space-between' }}>
-          <span>
-            <span className="muted">{s.position}.</span> {formatSet(s)}
-          </span>
-          <button className="btn" onClick={() => deleteSet.mutate(s.id)} aria-label={`delete-set-${s.position}`}>
-            ✕
-          </button>
-        </div>
-      ))}
+      {!isUpNext && (
+        <>
+          <div className="muted">
+            {showDelta ? (
+              <span className={delta > 0 ? 'delta-up' : 'delta-down'}>
+                {delta > 0 ? '+' : ''}{delta}kg {t('train.vsLast')} {delta > 0 ? '↗' : '↘'}
+              </span>
+            ) : (
+              <>
+                {last === null && t('train.noPrevious')}
+                {last && (
+                  <>
+                    {t('train.lastTime')} ({formatDay(String(last.startedAt), locale)}):{' '}
+                    {last.sets.map((s) => formatSet(s)).join(', ')}
+                  </>
+                )}
+              </>
+            )}
+          </div>
 
-      {/* Input values intentionally persist after logging (common gym pattern: same weight across sets). */}
-      <SetInputRow
-        exerciseType={we.exercise.type}
-        submitLabel={t('train.logSet')}
-        busy={logSet.isPending}
-        onSubmit={(input) => logSet.mutate(input)}
-      />
-      {(logSet.isError || deleteSet.isError) && <p className="error-text">{t('error.generic')}</p>}
+          {we.sets.map((s) => (
+            <div key={s.id}>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <span>
+                  <span className="muted">{s.position}.</span> {formatSet(s)}
+                </span>
+                <button className="btn" onClick={() => deleteSet.mutate(s.id)} aria-label={`delete-set-${s.position}`}>
+                  ✕
+                </button>
+              </div>
+              {(s as { note?: string | null }).note && (
+                <p className="set-note">{(s as { note?: string | null }).note}</p>
+              )}
+            </div>
+          ))}
+
+          {/* Input values intentionally persist after logging (common gym pattern: same weight across sets). */}
+          <SetInputRow
+            exerciseType={we.exercise.type}
+            submitLabel={t('train.logSet')}
+            busy={logSet.isPending}
+            onSubmit={(input) => logSet.mutate(input)}
+          />
+          {(logSet.isError || deleteSet.isError) && <p className="error-text">{t('error.generic')}</p>}
+        </>
+      )}
     </div>
   );
 }
@@ -86,11 +141,33 @@ export function SessionPage() {
   const workout = data?.workout ?? null;
   const addExercise = useAddWorkoutExercise(workout?.id ?? '');
   const update = useUpdateWorkout(workout?.id ?? '');
+  const elapsedMin = useElapsedMin(workout?.startedAt ?? new Date().toISOString());
 
   const handlePickerClose = useCallback(() => setPickerOpen(false), []);
 
-  if (isPending) return <p className="muted">…</p>;
+  if (isPending) return <Skeleton height={120} count={3} />;
   if (!workout) return <Navigate to="/train" replace />;
+
+  const exercises = workout.workoutExercises;
+
+  // activeIndex = max(lastIndexWith(sets.length > 0), 0)
+  let activeIndex = 0;
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    if (ex && ex.sets.length > 0) activeIndex = i;
+  }
+
+  // Total sets done and planned (for the ring)
+  const totalDone = exercises.reduce((sum, we) => sum + we.sets.length, 0);
+  const hasAnyTarget = exercises.some(
+    (we) => (we as { targetSets?: number | null }).targetSets != null,
+  );
+  const totalPlanned = hasAnyTarget
+    ? exercises.reduce(
+        (sum, we) => sum + ((we as { targetSets?: number | null }).targetSets ?? 0),
+        0,
+      )
+    : null;
 
   const finish = () =>
     update.mutate(
@@ -100,18 +177,26 @@ export function SessionPage() {
 
   return (
     <section className="stack">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>{t('train.inProgress')}</h1>
-        <button className="btn btn-primary" onClick={finish} disabled={update.isPending}>
-          {t('train.finish')}
-        </button>
+      <div className="session-header">
+        <ProgressRing done={totalDone} total={totalPlanned} />
+        <div className="stack" style={{ gap: 4, flex: 1 }}>
+          <p className="eyebrow">
+            {elapsedMin} {t('train.elapsedMin')}
+          </p>
+          <button className="btn btn-primary" onClick={finish} disabled={update.isPending}>
+            {t('train.finish')}
+          </button>
+        </div>
       </div>
-      <p className="muted">
-        {t('train.startedAt')} {new Date(workout.startedAt).toLocaleTimeString()}
-      </p>
 
-      {workout.workoutExercises.map((we) => (
-        <ExerciseBlock key={we.id} workoutId={workout.id} we={we} />
+      {exercises.map((we, i) => (
+        <ExerciseBlock
+          key={we.id}
+          workoutId={workout.id}
+          we={we}
+          isActive={i === activeIndex}
+          isUpNext={we.sets.length === 0 && i > activeIndex}
+        />
       ))}
 
       <button className="btn" onClick={() => setPickerOpen(true)}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
 import { QuickLogSheet } from './QuickLogSheet';
 
@@ -12,6 +12,7 @@ const TABS: { to: string; key: MessageKey; icon: string }[] = [
 
 export function AppLayout() {
   const { t } = useI18n();
+  const { pathname } = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
@@ -36,14 +37,18 @@ export function AppLayout() {
       <main className="app-main">
         <Outlet />
       </main>
-      <button
-        className="fab"
-        aria-label={t('quickLog.title')}
-        onClick={() => setSheetOpen(true)}
-      >
-        +
-      </button>
-      {sheetOpen && <QuickLogSheet onClose={() => setSheetOpen(false)} />}
+      {pathname !== '/train/session' && (
+        <>
+          <button
+            className="fab"
+            aria-label={t('quickLog.title')}
+            onClick={() => setSheetOpen(true)}
+          >
+            +
+          </button>
+          {sheetOpen && <QuickLogSheet onClose={() => setSheetOpen(false)} />}
+        </>
+      )}
     </div>
   );
 }

@@ -20,7 +20,7 @@ export function SetInputRow({
   exerciseType: ExerciseType;
   onSubmit: (input: SetInput) => void;
   submitLabel: string;
-  initial?: { weightKg?: string; reps?: string; rpe?: string; durationMin?: string; distanceKm?: string };
+  initial?: { weightKg?: string; reps?: string; rpe?: string; durationMin?: string; distanceKm?: string; note?: string };
   busy?: boolean;
 }) {
   const { t } = useI18n();
@@ -29,6 +29,8 @@ export function SetInputRow({
   const [rpe, setRpe] = useState(initial?.rpe ?? '');
   const [durationMin, setDurationMin] = useState(initial?.durationMin ?? '');
   const [distanceKm, setDistanceKm] = useState(initial?.distanceKm ?? '');
+  const [note, setNote] = useState(initial?.note ?? '');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const isCardio = exerciseType === 'cardio';
 
@@ -38,6 +40,7 @@ export function SetInputRow({
     ...(num(rpe) !== undefined ? { rpe: num(rpe) } : {}),
     ...(num(durationMin) !== undefined ? { durationSec: Math.round(num(durationMin)! * 60) } : {}),
     ...(num(distanceKm) !== undefined ? { distanceM: Math.round(num(distanceKm)! * 1000) } : {}),
+    ...(note.trim() !== '' ? { note: note.trim() } : {}),
   });
 
   const valid =
@@ -61,20 +64,41 @@ export function SetInputRow({
   );
 
   return (
-    <div className="row" style={{ alignItems: 'flex-start' }}>
-      {!isCardio && field(t('field.weight'), weight, setWeight)}
-      {!isCardio && field(t('field.reps'), reps, setReps)}
-      {!isCardio && field(t('field.rpe'), rpe, setRpe)}
-      {isCardio && field(t('field.duration'), durationMin, setDurationMin)}
-      {isCardio && field(t('field.distance'), distanceKm, setDistanceKm)}
-      <button
-        className="btn btn-primary"
-        style={{ marginLeft: 'auto' }}
-        disabled={!valid || busy}
-        onClick={() => onSubmit(build())}
-      >
-        {submitLabel}
-      </button>
+    <div className="stack" style={{ gap: 6 }}>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        {!isCardio && field(t('field.weight'), weight, setWeight)}
+        {!isCardio && field(t('field.reps'), reps, setReps)}
+        {!isCardio && field(t('field.rpe'), rpe, setRpe)}
+        {isCardio && field(t('field.duration'), durationMin, setDurationMin)}
+        {isCardio && field(t('field.distance'), distanceKm, setDistanceKm)}
+        <button
+          className="btn"
+          style={{ marginLeft: 'auto' }}
+          aria-label={t('set.note')}
+          onClick={() => setNoteOpen((o) => !o)}
+          type="button"
+        >
+          ✎
+        </button>
+        <button
+          className="btn btn-primary"
+          disabled={!valid || busy}
+          onClick={() => onSubmit(build())}
+          type="button"
+        >
+          {submitLabel}
+        </button>
+      </div>
+      {noteOpen && (
+        <input
+          className="input"
+          style={{ fontSize: 16 }}
+          placeholder={t('set.notePlaceholder')}
+          maxLength={200}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      )}
     </div>
   );
 }

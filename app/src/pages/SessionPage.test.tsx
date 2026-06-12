@@ -18,12 +18,13 @@ const activeWorkout = {
       id: 'we1',
       position: 1,
       notes: null,
+      targetSets: 3,
       exercise: {
         id: 'e1', nameEn: 'Bench Press', nameJa: 'ベンチプレス', type: 'strength',
         muscleGroup: 'chest', equipment: 'barbell', isArchived: false, userId: null,
       },
       sets: [
-        { id: 's1', position: 1, weightKg: 80, reps: 8, rpe: null, durationSec: null, distanceM: null },
+        { id: 's1', position: 1, weightKg: 80, reps: 8, rpe: null, durationSec: null, distanceM: null, note: 'フォーム良し' },
       ],
     },
   ],
@@ -49,7 +50,7 @@ function renderSession() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SessionPage', () => {
-  it('renders the active workout with ghosts and logged sets', async () => {
+  it('renders the active workout with delta line and logged sets', async () => {
     mockApi({
       'GET /api/workouts/active': { workout: activeWorkout },
       'GET /api/exercises/e1/last-sets': {
@@ -60,8 +61,23 @@ describe('SessionPage', () => {
     });
     renderSession();
     expect(await screen.findByText('Bench Press')).toBeInTheDocument();
-    expect(await screen.findByText(/77.5kg × 8/)).toBeInTheDocument(); // ghost
+    // delta line replaces ghost when delta is non-null and non-zero (80 - 77.5 = +2.5)
+    expect(await screen.findByText(/\+2\.5kg/)).toBeInTheDocument();
     expect(screen.getByText(/80kg × 8/)).toBeInTheDocument(); // logged set
+  });
+
+  it('renders pips with aria-label 1/3 and the set note', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: activeWorkout },
+      'GET /api/exercises/e1/last-sets': null,
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    // Pips: 1 set done out of 3 planned (may appear on ring and/or pips)
+    const labeled = screen.getAllByLabelText('1/3');
+    expect(labeled.length).toBeGreaterThan(0);
+    // Set note rendered
+    expect(screen.getByText('フォーム良し')).toBeInTheDocument();
   });
 
   it('logs a set with the typed values', async () => {

@@ -59,4 +59,16 @@ describe('SetInputRow', () => {
     renderRow('strength');
     expect(screen.getByRole('button', { name: 'Log set' })).toBeDisabled();
   });
+
+  it('includes note in payload when note toggle opened and text entered', async () => {
+    const onSubmit = renderRow('strength');
+    await userEvent.type(screen.getByLabelText('kg'), '80');
+    await userEvent.type(screen.getByLabelText('reps'), '8');
+    // Open the note toggle
+    await userEvent.click(screen.getByRole('button', { name: 'Note' }));
+    const noteInput = screen.getByPlaceholderText('e.g. form broke down on the last rep');
+    await userEvent.type(noteInput, 'Great form');
+    await userEvent.click(screen.getByRole('button', { name: 'Log set' }));
+    expect(onSubmit).toHaveBeenCalledWith({ weightKg: 80, reps: 8, note: 'Great form' });
+  });
 });
