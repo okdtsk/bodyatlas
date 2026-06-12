@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+const isoDateString = z
+  .string()
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: 'Invalid datetime' });
+
 export const EXERCISE_TYPES = ['strength', 'bodyweight', 'cardio'] as const;
 export const MUSCLE_GROUPS = [
   'chest',
@@ -33,6 +37,7 @@ export const setInputSchema = z
     rpe: z.number().min(1).max(10).multipleOf(0.5).optional(),
     durationSec: z.number().int().positive().max(86400).optional(),
     distanceM: z.number().positive().max(1000000).optional(),
+    note: z.string().trim().min(1).max(200).optional(),
   })
   .refine((v) => v.reps !== undefined || v.durationSec !== undefined || v.distanceM !== undefined, {
     message: 'A set needs reps, duration, or distance',
@@ -64,6 +69,8 @@ export const createWorkoutSchema = z
 export const updateWorkoutSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   finish: z.boolean().optional(),
+  startedAt: isoDateString.optional(),
+  endedAt: isoDateString.optional(),
 });
 
 export const templateInputSchema = z.object({

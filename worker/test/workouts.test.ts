@@ -1,5 +1,7 @@
-import { SELF } from 'cloudflare:test';
+import { SELF, env } from 'cloudflare:test';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { getDb, schema } from '../src/db';
 import { seedTemplate, seedUser, seedWorkout, sessionCookieFor } from './helpers';
 
 async function authed(userId = 'user-1') {
@@ -12,6 +14,11 @@ const json = (headers: Record<string, string>, body: unknown, method = 'POST') =
   headers: { ...headers, 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
+
+async function startWorkout(headers: Record<string, string>): Promise<WorkoutDetail> {
+  const res = await SELF.fetch('https://example.com/api/workouts', json(headers, {}));
+  return (await res.json()) as WorkoutDetail;
+}
 
 type WorkoutDetail = {
   id: string;
@@ -152,11 +159,6 @@ describe('/api/workouts', () => {
 });
 
 describe('/api/workouts nested exercises and sets', () => {
-  async function startWorkout(headers: Record<string, string>): Promise<WorkoutDetail> {
-    const res = await SELF.fetch('https://example.com/api/workouts', json(headers, {}));
-    return (await res.json()) as WorkoutDetail;
-  }
-
   it('adds an exercise, logs sets with incrementing positions, edits and deletes a set', async () => {
     const headers = await authed();
     const w = await startWorkout(headers);
@@ -264,5 +266,62 @@ describe('/api/workouts nested exercises and sets', () => {
       await SELF.fetch('https://example.com/api/workouts/w-done', { headers })
     ).json()) as WorkoutDetail;
     expect(detail.workoutExercises[0]?.sets).toHaveLength(2);
+  });
+});
+
+describe('plan 2c API extensions', () => {
+  it('persists a note on a set and returns it in detail', async () => {
+    const headers = await authed();
+    const w = await startWorkout(headers);
+    const we = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises`,
+        json(headers, { exerciseId: 'seed-barbell-bench-press' }),
+      )
+    ).json()) as { id: string };
+    const set = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${w.id}/exercises/${we.id}/sets`,
+        json(headers, { weightKg: 80, reps: 8, note: '最後だけフォームが崩れた' }),
+      )
+    ).json()) as { note: string | null };
+    expect(set.note).toBe('最後だけフォームが崩れた');
+  });
+
+  it('copies targetSets from the template onto workout exercises', async () => {
+    const headers = await authed();
+    await seedTemplate('t1', 'user-1', 'Push A', ['seed-barbell-bench-press']);
+    const db = getDb(env.DB);
+    await db
+      .update(schema.templateExercises)
+      .set({ targetSets: 3 })
+      .where(eq(schema.templateExercises.templateId, 't1'));
+    const res = await SELF.fetch('https://example.com/api/workouts', json(headers, { templateId: 't1' }));
+    const created = (await res.json()) as { workoutExercises: Array<{ targetSets: number | null }> };
+    expect(created.workoutExercises[0]?.targetSets).toBe(3);
+  });
+
+  it('updates startedAt and endedAt via PATCH', async () => {
+    const headers = await authed();
+    await seedWorkout('w1', 'user-1', 'seed-deadlift', [{ weightKg: 100, reps: 5 }]);
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts/w1',
+      json(headers, { startedAt: '2026-06-01T09:30:00.000Z', endedAt: '2026-06-01T10:45:00.000Z' }, 'PATCH'),
+    );
+    expect(res.status).toBe(200);
+    const updated = (await res.json()) as { startedAt: string; endedAt: string };
+    expect(new Date(updated.startedAt).toISOString()).toBe('2026-06-01T09:30:00.000Z');
+    expect(new Date(updated.endedAt).toISOString()).toBe('2026-06-01T10:45:00.000Z');
+  });
+
+  it('rejects endedAt before startedAt with 422', async () => {
+    const headers = await authed();
+    await seedWorkout('w1', 'user-1', 'seed-deadlift', [{ weightKg: 100, reps: 5 }]);
+    const res = await SELF.fetch(
+      'https://example.com/api/workouts/w1',
+      json(headers, { endedAt: '2026-05-01T09:00:00.000Z' }, 'PATCH'), // before existing startedAt 2026-06-01
+    );
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_time_range');
   });
 });

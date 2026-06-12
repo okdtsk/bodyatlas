@@ -94,6 +94,7 @@ export const workoutExercises = sqliteTable(
       .references(() => exercises.id),
     position: integer('position').notNull(),
     notes: text('notes'),
+    targetSets: integer('target_sets'),
   },
   (t) => [
     index('idx_workout_exercises_workout').on(t.workoutId),
@@ -114,6 +115,7 @@ export const sets = sqliteTable(
     rpe: real('rpe'),
     durationSec: integer('duration_sec'),
     distanceM: real('distance_m'),
+    note: text('note'),
   },
   (t) => [index('idx_sets_workout_exercise').on(t.workoutExerciseId)],
 );

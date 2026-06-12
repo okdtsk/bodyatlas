@@ -56,3 +56,15 @@ describe('updateWorkoutSchema', () => {
     expect(updateWorkoutSchema.safeParse({ finish: true, notes: 'felt strong' }).success).toBe(true);
   });
 });
+
+describe('plan 2c schema extensions', () => {
+  it('accepts a note on a set and trims it', () => {
+    const r = setInputSchema.safeParse({ reps: 8, note: ' フォーム良し ' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.note).toBe('フォーム良し');
+  });
+  it('accepts ISO datetimes on workout update and rejects garbage', () => {
+    expect(updateWorkoutSchema.safeParse({ startedAt: '2026-06-01T09:30' }).success).toBe(true);
+    expect(updateWorkoutSchema.safeParse({ endedAt: 'not-a-date' }).success).toBe(false);
+  });
+});

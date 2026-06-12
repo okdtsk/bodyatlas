@@ -128,7 +128,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
         );
       }
 
-      let exerciseIds: string[] = [];
+      let exercisePairs: Array<{ exerciseId: string; targetSets: number | null }> = [];
       let templateId: string | null = null;
       if (input.templateId) {
         const tpl = await db.query.templates.findFirst({
@@ -137,22 +137,29 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
         });
         if (!tpl) return c.json({ error: { code: 'not_found', message: 'Template not found' } }, 404);
         templateId = tpl.id;
-        exerciseIds = tpl.templateExercises.map((te) => te.exerciseId);
+        exercisePairs = tpl.templateExercises.map((te) => ({
+          exerciseId: te.exerciseId,
+          targetSets: te.targetSets ?? null,
+        }));
       } else if (input.copyFromWorkoutId) {
         const source = await loadWorkoutDetail(db, userId, input.copyFromWorkoutId);
         if (!source) return c.json(notFound, 404);
-        exerciseIds = source.workoutExercises.map((we) => we.exercise.id);
+        exercisePairs = source.workoutExercises.map((we) => ({
+          exerciseId: we.exercise.id,
+          targetSets: we.targetSets ?? null,
+        }));
       }
 
       const id = crypto.randomUUID();
       const inserts = [
         db.insert(schema.workouts).values({ id, userId, templateId }),
-        ...exerciseIds.map((exerciseId, i) =>
+        ...exercisePairs.map(({ exerciseId, targetSets }, i) =>
           db.insert(schema.workoutExercises).values({
             id: crypto.randomUUID(),
             workoutId: id,
             exerciseId,
             position: i + 1,
+            targetSets,
           }),
         ),
       ];
@@ -236,6 +243,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
         rpe: input.rpe ?? null,
         durationSec: input.durationSec ?? null,
         distanceM: input.distanceM ?? null,
+        note: input.note ?? null,
       };
       await db.insert(schema.sets).values(set);
       return c.json(set, 201);
@@ -264,6 +272,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
           rpe: input.rpe ?? null,
           durationSec: input.durationSec ?? null,
           distanceM: input.distanceM ?? null,
+          note: input.note ?? null,
         })
         .where(eq(schema.sets.id, setId));
       const updated = await db.query.sets.findFirst({ where: eq(schema.sets.id, setId) });
@@ -302,11 +311,24 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       });
       if (!existing) return c.json(notFound, 404);
       const input = c.req.valid('json');
+      const newStartedAt = input.startedAt ? new Date(input.startedAt) : existing.startedAt;
+      const newEndedAt = input.endedAt
+        ? new Date(input.endedAt)
+        : input.finish
+          ? new Date()
+          : existing.endedAt;
+      if (newEndedAt && newStartedAt > newEndedAt) {
+        return c.json(
+          { error: { code: 'invalid_time_range', message: 'endedAt must be after startedAt' } },
+          422,
+        );
+      }
       await db
         .update(schema.workouts)
         .set({
           ...(input.notes !== undefined ? { notes: input.notes } : {}),
-          ...(input.finish ? { endedAt: new Date() } : {}),
+          ...(input.startedAt ? { startedAt: newStartedAt } : {}),
+          ...(input.endedAt || input.finish ? { endedAt: newEndedAt } : {}),
         })
         .where(eq(schema.workouts.id, id));
       return c.json(await loadWorkoutDetail(db, userId, id));
