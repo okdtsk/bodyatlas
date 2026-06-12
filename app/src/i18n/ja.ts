@@ -190,4 +190,10 @@ export const ja: Record<MessageKey, string> = {
   'ai.noReview': 'まだレビューがありません — 最初のレビューを生成しましょう！',
   'ai.notConfigured': '設定でAIコーチを連携すると利用できます。',
   'ai.error': 'AIリクエストが失敗しました。設定を確認してください。',
+  'native.appleHealth': 'Apple Health',
+  'native.connect': 'Apple Healthと連携',
+  'native.sync': '過去30日分を取り込む',
+  'native.syncing': '取り込み中…',
+  'native.syncResult': '睡眠{sleep}件・体組成{weight}件を取り込みました。',
+  'native.syncError': '取り込みに失敗しました。',
 };

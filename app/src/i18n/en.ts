@@ -188,6 +188,12 @@ export const en = {
   'ai.noReview': 'No review yet — generate your first one!',
   'ai.notConfigured': 'Configure the AI coach in Settings to enable this.',
   'ai.error': 'The AI request failed. Check your settings.',
+  'native.appleHealth': 'Apple Health',
+  'native.connect': 'Connect Apple Health',
+  'native.sync': 'Import last 30 days',
+  'native.syncing': 'Importing…',
+  'native.syncResult': 'Imported {sleep} sleep records and {weight} measurements.',
+  'native.syncError': 'Import failed.',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

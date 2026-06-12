@@ -6,6 +6,16 @@ import { api } from '../lib/api';
 import { useCreateToken, useRevokeToken, useTokens, type CreatedToken } from '../lib/tokens';
 import { useAiSettings, useSaveAiSettings, useDeleteAiSettings, useTestAi } from '../lib/ai';
 import { useMe } from '../lib/useMe';
+import { useCreateSleep, useCreateMeasurement, type SleepRecord, type Measurement } from '../lib/health';
+import {
+  isNativeShell,
+  healthRequestAuth,
+  healthQuerySamples,
+  mergeSleepSamples,
+  pickNewDays,
+} from '../lib/native';
+import { localDayKey } from '../lib/buckets';
+import { addDays } from '../lib/format';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -42,6 +52,14 @@ export function SettingsPage() {
   const [aiKey, setAiKey] = useState('');
   const [aiModelTouched, setAiModelTouched] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+
+  // Apple Health state
+  const [ahConnected, setAhConnected] = useState(false);
+  const [ahSyncing, setAhSyncing] = useState(false);
+  const [ahResult, setAhResult] = useState<{ sleep: number; weight: number } | null>(null);
+  const [ahError, setAhError] = useState(false);
+  const createSleep = useCreateSleep();
+  const createMeasurement = useCreateMeasurement();
 
   function getDefaultModel(provider: AiProvider | ''): string {
     if (provider === 'claude') return 'claude-opus-4-8';
@@ -107,6 +125,95 @@ export function SettingsPage() {
     setAiProvider(currentProvider);
     if (!aiModelTouched && currentModel) {
       setAiModel(currentModel);
+    }
+  }
+
+  async function handleAhConnect() {
+    try {
+      await healthRequestAuth();
+      setAhConnected(true);
+    } catch {
+      setAhError(true);
+    }
+  }
+
+  async function handleAhSync() {
+    setAhSyncing(true);
+    setAhResult(null);
+    setAhError(false);
+    try {
+      // 1. Query Apple Health for the past 30 days
+      const samples = await healthQuerySamples(30);
+
+      // 2. Merge fragmented sleep samples
+      const mergedSleep = mergeSleepSamples(samples.sleep);
+
+      // 3. Fetch existing records from BodyAtlas over the same 30-day window
+      const toDate = new Date();
+      const fromDate = addDays(toDate, -30);
+      const fromIso = fromDate.toISOString();
+      const toIso = toDate.toISOString();
+
+      const [existingSleep, existingMeasurements] = await Promise.all([
+        api.sleep.$get({ query: { from: fromIso, to: toIso } }).then((r) => {
+          if (!r.ok) throw new Error(`sleep fetch failed: ${r.status}`);
+          return r.json() as Promise<SleepRecord[]>;
+        }),
+        api.measurements.$get({ query: { from: fromIso, to: toIso } }).then((r) => {
+          if (!r.ok) throw new Error(`measurements fetch failed: ${r.status}`);
+          return r.json() as Promise<Measurement[]>;
+        }),
+      ]);
+
+      // 4. Build existing day-key sets (sleep keyed on wokeAt, measurements on measuredAt)
+      const existingSleepDays = new Set(existingSleep.map((r) => localDayKey(r.wokeAt)));
+      const existingMeasurementDays = new Set(
+        existingMeasurements.map((r) => localDayKey(r.measuredAt)),
+      );
+
+      // 5. Dedupe: pick only new days
+      const newSleep = pickNewDays(mergedSleep, existingSleepDays, (r) => localDayKey(r.wokeAt));
+
+      // 6. Merge weight + bodyFat samples by local day into one measurement per day
+      type DayMeasurement = { day: string; kg?: number; pct?: number };
+      const measurementByDay = new Map<string, DayMeasurement>();
+      for (const w of samples.weight) {
+        const day = localDayKey(w.date);
+        const entry = measurementByDay.get(day) ?? { day };
+        entry.kg = w.kg;
+        measurementByDay.set(day, entry);
+      }
+      for (const bf of samples.bodyFat) {
+        const day = localDayKey(bf.date);
+        const entry = measurementByDay.get(day) ?? { day };
+        entry.pct = bf.pct;
+        measurementByDay.set(day, entry);
+      }
+      const allMeasurements = [...measurementByDay.values()];
+      const newMeasurements = pickNewDays(
+        allMeasurements,
+        existingMeasurementDays,
+        (m) => m.day,
+      );
+
+      // 7. POST each new sleep record sequentially
+      for (const record of newSleep) {
+        await createSleep.mutateAsync({ bedAt: record.bedAt, wokeAt: record.wokeAt });
+      }
+
+      // 8. POST each new measurement sequentially
+      for (const m of newMeasurements) {
+        const input: { weightKg?: number; bodyFatPct?: number } = {};
+        if (m.kg !== undefined) input.weightKg = m.kg;
+        if (m.pct !== undefined) input.bodyFatPct = m.pct;
+        await createMeasurement.mutateAsync(input);
+      }
+
+      setAhResult({ sleep: newSleep.length, weight: newMeasurements.length });
+    } catch {
+      setAhError(true);
+    } finally {
+      setAhSyncing(false);
     }
   }
 
@@ -461,6 +568,63 @@ export function SettingsPage() {
       )}
       {update.isError && (
         <p style={{ color: 'var(--negative)' }}>{t('error.generic')}</p>
+      )}
+
+      {/* Apple Health section — shown only in the native iOS shell */}
+      {isNativeShell() && (
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: '1rem', marginBottom: 12 }}>{t('native.appleHealth')}</h2>
+
+          {!ahConnected && (
+            <button
+              type="button"
+              onClick={handleAhConnect}
+              style={{
+                padding: '10px 16px',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                cursor: 'pointer',
+                marginBottom: 12,
+              }}
+            >
+              {t('native.connect')}
+            </button>
+          )}
+
+          {ahConnected && (
+            <button
+              type="button"
+              onClick={handleAhSync}
+              disabled={ahSyncing}
+              style={{
+                padding: '10px 16px',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                cursor: ahSyncing ? 'not-allowed' : 'pointer',
+                opacity: ahSyncing ? 0.6 : 1,
+                marginBottom: 12,
+              }}
+            >
+              {ahSyncing ? t('native.syncing') : t('native.sync')}
+            </button>
+          )}
+
+          {ahResult !== null && (
+            <p style={{ color: 'var(--positive)' }}>
+              {t('native.syncResult')
+                .replace('{sleep}', String(ahResult.sleep))
+                .replace('{weight}', String(ahResult.weight))}
+            </p>
+          )}
+
+          {ahError && (
+            <p style={{ color: 'var(--negative)' }}>{t('native.syncError')}</p>
+          )}
+        </section>
       )}
 
       <form method="post" action="/auth/logout">
