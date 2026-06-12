@@ -180,7 +180,7 @@ export function useStartWorkout() {
 export function useUpdateWorkout(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { notes?: string | null; finish?: boolean }) =>
+    mutationFn: (input: { notes?: string | null; finish?: boolean; startedAt?: string; endedAt?: string }) =>
       expectOk(api.workouts[':id'].$patch({ param: { id }, json: input })),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts'] }),
   });
