@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bodyatlas",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public-stub",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bodyatlas",
+      "database_id": "REPLACE_AT_DEPLOY",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [{ "binding": "SESSIONS", "id": "REPLACE_AT_DEPLOY" }],
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@bodyatlas/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@bodyatlas/shared": "^0.0.0",
+    "@hono/zod-validator": "^0.8.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.24",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.13",
+    "@cloudflare/workers-types": "^4.20260608.1",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
+    "wrangler": "^4.98.0"
+  }
+}
