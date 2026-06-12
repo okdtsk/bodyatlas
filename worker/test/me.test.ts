@@ -1,6 +1,18 @@
 import { SELF } from 'cloudflare:test';
+import { hc } from 'hono/client';
 import { describe, expect, it } from 'vitest';
+import type { AppType } from '../src';
 import { seedUser, sessionCookieFor } from './helpers';
+
+// Type-level guard: AppType must expose the /me RPC surface for the app (Task 10).
+// If the composition in src/index.ts ever erases the route schema (e.g. via a
+// bare `as Hono<AppEnv>` cast), this stops compiling.
+const _typecheckOnly = () => {
+  const client = hc<AppType>('/api');
+  void client.me.$get;
+  void client.me.$patch;
+};
+void _typecheckOnly;
 
 describe('/api/me', () => {
   it('returns 401 without a session', async () => {

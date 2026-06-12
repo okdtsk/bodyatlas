@@ -6,9 +6,8 @@ import type { AppEnv } from './types';
 
 export const apiApp = new Hono<AppEnv>()
   .get('/health', (c) => c.json({ ok: true }))
-  .use('/me', requireAuth)
-  .use('/me/*', requireAuth)
-  .route('/me', meRoutes as unknown as Hono<AppEnv>);
+  .use(requireAuth)
+  .route('/me', meRoutes);
 
 const app = new Hono<AppEnv>();
 
