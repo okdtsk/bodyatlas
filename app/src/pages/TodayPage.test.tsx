@@ -20,13 +20,21 @@ const me = {
   targetCarbsG: 200,
 };
 
-const todayIso = new Date().toISOString().slice(0, 10);
+/** ISO instant at the given LOCAL wall-clock time, dayOffset days from today.
+ *  The component judges "today" in device-local time, so fixtures must too —
+ *  building instants from the UTC date string breaks when local date ≠ UTC date. */
+function localAt(dayOffset: number, hours: number, minutes = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+}
 
 const meal1 = {
   id: 'm1',
   userId: 'u1',
   name: 'Oatmeal',
-  eatenAt: `${todayIso}T08:00:00.000Z`,
+  eatenAt: localAt(0, 8),
   calories: 350,
   proteinG: 12,
   fatG: 6,
@@ -39,7 +47,7 @@ const meal2 = {
   id: 'm2',
   userId: 'u1',
   name: 'Chicken Rice',
-  eatenAt: `${todayIso}T13:00:00.000Z`,
+  eatenAt: localAt(0, 13),
   calories: 650,
   proteinG: 45,
   fatG: 8,
@@ -53,7 +61,7 @@ const measurement1 = {
   userId: 'u1',
   weightKg: 73.5,
   bodyFatPct: null,
-  measuredAt: `${todayIso}T07:00:00.000Z`,
+  measuredAt: localAt(0, 7),
 };
 
 const measurement2 = {
@@ -64,13 +72,12 @@ const measurement2 = {
   measuredAt: new Date(Date.now() - 7 * 86400000).toISOString(),
 };
 
-// Yesterday 22:00 to today 06:30 = 8h 30m
-const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+// Yesterday 22:00 to today 06:30 local = 8h 30m
 const sleep1 = {
   id: 'sl1',
   userId: 'u1',
-  bedAt: `${yesterday}T22:00:00.000Z`,
-  wokeAt: `${todayIso}T06:30:00.000Z`,
+  bedAt: localAt(-1, 22),
+  wokeAt: localAt(0, 6, 30),
   quality: 4,
   notes: null,
 };
@@ -78,8 +85,8 @@ const sleep1 = {
 // A workout that ended today
 const workoutToday = {
   id: 'w-today',
-  startedAt: `${todayIso}T10:00:00.000Z`,
-  endedAt: `${todayIso}T11:00:00.000Z`,
+  startedAt: localAt(0, 10),
+  endedAt: localAt(0, 11),
   exerciseNames: ['Barbell Bench Press'],
   exerciseNamesJa: ['バーベルベンチプレス'],
   setCount: 6,
