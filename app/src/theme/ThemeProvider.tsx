@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import type { Theme } from '@bodyatlas/shared';
+import { THEMES, type Theme } from '@bodyatlas/shared';
 
 const THEME_STORAGE_KEY = 'ba_theme';
 
@@ -14,7 +14,10 @@ export function applyTheme(theme: Theme) {
 
 export function storedTheme(): Theme | null {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return stored !== null && (THEMES as readonly string[]).includes(stored)
+      ? (stored as Theme)
+      : null;
   } catch {
     return null;
   }

@@ -24,3 +24,100 @@ a {
 button {
   font: inherit;
 }
+
+.app-layout {
+  min-height: 100dvh;
+}
+
+.app-main {
+  padding: 16px;
+  padding-bottom: 96px;
+}
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 env(safe-area-inset-bottom);
+  z-index: 10;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.tab.active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 28px;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  z-index: 15;
+}
+
+/* Desktop: tab bar becomes a left sidebar */
+@media (min-width: 768px) {
+  .app-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+  }
+
+  .app-nav {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+    height: 100dvh;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    padding: 24px 12px;
+  }
+
+  .tab {
+    flex-direction: row;
+    gap: 10px;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    width: 100%;
+  }
+
+  .tab.active {
+    background: var(--surface-2);
+  }
+
+  .app-main {
+    padding: 24px 32px;
+    max-width: 960px;
+  }
+
+  .fab {
+    bottom: 24px;
+  }
+}
