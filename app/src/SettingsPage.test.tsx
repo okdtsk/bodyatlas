@@ -19,34 +19,40 @@ const me = {
   targetCarbsG: null,
 };
 
+function makeSetup(responseOverride?: Record<string, unknown>) {
+  const fetchSpy = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'PATCH') {
+      return new Response(JSON.stringify({ ...me, ...responseOverride }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify(me), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+  vi.stubGlobal('fetch', fetchSpy);
+
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client.setQueryData(['me'], me);
+
+  render(
+    <QueryClientProvider client={client}>
+      <I18nProvider locale="en">
+        <SettingsPage />
+      </I18nProvider>
+    </QueryClientProvider>,
+  );
+
+  return fetchSpy;
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SettingsPage', () => {
   it('PATCHes /api/me when the theme changes', async () => {
-    const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'PATCH') {
-        return new Response(JSON.stringify({ ...me, theme: 'clinical-light' }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify(me), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    });
-    vi.stubGlobal('fetch', fetchSpy);
-
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    client.setQueryData(['me'], me);
-
-    render(
-      <QueryClientProvider client={client}>
-        <I18nProvider locale="en">
-          <SettingsPage />
-        </I18nProvider>
-      </QueryClientProvider>,
-    );
+    const fetchSpy = makeSetup({ theme: 'clinical-light' });
 
     await userEvent.selectOptions(screen.getByLabelText('Theme'), 'clinical-light');
 
@@ -54,6 +60,21 @@ describe('SettingsPage', () => {
       const patchCall = fetchSpy.mock.calls.find(([, init]) => init?.method === 'PATCH');
       expect(patchCall).toBeTruthy();
       expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ theme: 'clinical-light' });
+    });
+  });
+
+  it('PATCHes /api/me with targetKcal when Calories input is filled and blurred', async () => {
+    const fetchSpy = makeSetup({ targetKcal: 2400 });
+
+    const input = screen.getByLabelText('Calories (kcal)');
+    await userEvent.clear(input);
+    await userEvent.type(input, '2400');
+    await userEvent.tab();
+
+    await waitFor(() => {
+      const patchCall = fetchSpy.mock.calls.find(([, init]) => init?.method === 'PATCH');
+      expect(patchCall).toBeTruthy();
+      expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ targetKcal: 2400 });
     });
   });
 });
