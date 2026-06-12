@@ -63,8 +63,10 @@ describe('plan 2c schema extensions', () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.note).toBe('フォーム良し');
   });
-  it('accepts ISO datetimes on workout update and rejects garbage', () => {
-    expect(updateWorkoutSchema.safeParse({ startedAt: '2026-06-01T09:30' }).success).toBe(true);
+  it('accepts ISO datetimes with explicit timezone and rejects local or garbage strings', () => {
+    expect(updateWorkoutSchema.safeParse({ startedAt: '2026-06-01T09:30:00.000Z' }).success).toBe(true);
+    expect(updateWorkoutSchema.safeParse({ startedAt: '2026-06-01T18:30:00+09:00' }).success).toBe(true);
+    expect(updateWorkoutSchema.safeParse({ startedAt: '2026-06-01T09:30' }).success).toBe(false);
     expect(updateWorkoutSchema.safeParse({ endedAt: 'not-a-date' }).success).toBe(false);
   });
 });

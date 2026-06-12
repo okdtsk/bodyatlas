@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 const isoDateString = z
   .string()
-  .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: 'Invalid datetime' });
+  .refine(
+    (v) => !Number.isNaN(new Date(v).getTime()) && /(?:Z|[+-]\d{2}:\d{2})$/.test(v),
+    { message: 'Datetime must include an explicit timezone (Z or ±HH:MM)' },
+  );
 
 export const EXERCISE_TYPES = ['strength', 'bodyweight', 'cardio'] as const;
 export const MUSCLE_GROUPS = [

@@ -272,6 +272,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
           rpe: input.rpe ?? null,
           durationSec: input.durationSec ?? null,
           distanceM: input.distanceM ?? null,
+          // FULL-VALUE semantics: omitting note clears it — SetInputRow always resends the complete payload.
           note: input.note ?? null,
         })
         .where(eq(schema.sets.id, setId));
