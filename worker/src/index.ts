@@ -11,6 +11,7 @@ import { templatesRoutes } from './routes/templates';
 import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
+import { aiRoutes } from './routes/ai';
 import type { AppEnv, Bindings } from './types';
 import { BodyAtlasMCP } from './mcp/server';
 import { verifyToken } from './auth/tokens';
@@ -28,7 +29,8 @@ export const apiApp = new Hono<AppEnv>()
   .route('/sleep', sleepRoutes)
   .route('/measurements', measurementsRoutes)
   .route('/trends', trendsRoutes)
-  .route('/tokens', tokensRoutes);
+  .route('/tokens', tokensRoutes)
+  .route('/ai', aiRoutes);
 
 const app = new Hono<AppEnv>();
 
