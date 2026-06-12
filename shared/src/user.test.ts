@@ -29,6 +29,14 @@ describe('userPrefsSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts null for nutrition targets (clearing a goal)', () => {
+    const result = userPrefsSchema.safeParse({
+      locale: 'en', theme: 'gym-dark', unit: 'kg', timezone: 'UTC',
+      targetKcal: null, targetProteinG: null, targetFatG: null, targetCarbsG: null,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('updateMeSchema', () => {
@@ -38,5 +46,13 @@ describe('updateMeSchema', () => {
 
   it('rejects a negative calorie target', () => {
     expect(updateMeSchema.safeParse({ targetKcal: -100 }).success).toBe(false);
+  });
+
+  it('allows clearing a target via PATCH (null)', () => {
+    expect(updateMeSchema.safeParse({ targetKcal: null }).success).toBe(true);
+  });
+
+  it('rejects a non-IANA timezone', () => {
+    expect(updateMeSchema.safeParse({ timezone: 'not-a-zone' }).success).toBe(false);
   });
 });

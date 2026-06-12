@@ -12,7 +12,17 @@ export const userPrefsSchema = z.object({
   locale: z.enum(LOCALES),
   theme: z.enum(THEMES),
   unit: z.enum(UNITS),
-  timezone: z.string().min(1),
+  timezone: z.string().refine(
+    (v) => {
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: v });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Invalid IANA timezone' },
+  ),
   targetKcal: z.number().int().positive().nullable(),
   targetProteinG: z.number().int().positive().nullable(),
   targetFatG: z.number().int().positive().nullable(),
