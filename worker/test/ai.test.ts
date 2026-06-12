@@ -1,5 +1,7 @@
 import { SELF } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getDb, schema } from '../src/db';
 import { seedUser, sessionCookieFor } from './helpers';
 
 afterEach(() => {
@@ -254,5 +256,292 @@ describe('POST /api/ai/test', () => {
     expect(body.error.code).toBe('ai_error');
     // The api key must not appear in the error message
     expect(body.error.message).not.toContain('sk-openai-test-502-key-abcdef');
+  });
+});
+
+// ─── estimate-meal ────────────────────────────────────────────────────────────
+
+describe('POST /api/ai/estimate-meal', () => {
+  it('returns 409 ai_not_configured when no settings stored', async () => {
+    const headers = await authed('ai-em-nocfg');
+    const res = await SELF.fetch('https://example.com/api/ai/estimate-meal', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'チキンカレー' }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('ai_not_configured');
+  });
+
+  it('returns 422 when description is missing', async () => {
+    const headers = await authed('ai-em-invalid');
+    // Store settings first
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+    const res = await SELF.fetch('https://example.com/api/ai/estimate-meal', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it('returns parsed nutrition on happy path (Claude-shaped response)', async () => {
+    const headers = await authed('ai-em-happy');
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    const estimateJson = {
+      calories: 650,
+      proteinG: 35,
+      fatG: 20,
+      carbsG: 80,
+      confidence: 'high',
+      note: 'Standard portion',
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: JSON.stringify(estimateJson) }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const res = await SELF.fetch('https://example.com/api/ai/estimate-meal', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'カツ丼 並盛り' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof estimateJson;
+    expect(body.calories).toBe(650);
+    expect(body.proteinG).toBe(35);
+    expect(body.fatG).toBe(20);
+    expect(body.carbsG).toBe(80);
+    expect(body.confidence).toBe('high');
+    expect(body.note).toBe('Standard portion');
+  });
+
+  it('strips fenced JSON (```json ... ```) and parses successfully', async () => {
+    const headers = await authed('ai-em-fence');
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    const estimateJson = { calories: 400, proteinG: 25, fatG: 15, carbsG: 50, confidence: 'medium' };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: '```json\n' + JSON.stringify(estimateJson) + '\n```' }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const res = await SELF.fetch('https://example.com/api/ai/estimate-meal', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'オートミール' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof estimateJson;
+    expect(body.calories).toBe(400);
+    expect(body.confidence).toBe('medium');
+  });
+
+  it('returns 502 ai_parse_error when LLM returns garbage', async () => {
+    const headers = await authed('ai-em-garbage');
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: 'Sure! That meal probably has around 500 calories.' }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const res = await SELF.fetch('https://example.com/api/ai/estimate-meal', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'ラーメン' }),
+    });
+    expect(res.status).toBe(502);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('ai_parse_error');
+  });
+});
+
+// ─── coach-review ─────────────────────────────────────────────────────────────
+
+describe('POST /api/ai/coach-review', () => {
+  it('returns 409 ai_not_configured when no settings stored', async () => {
+    const headers = await authed('ai-cr-nocfg');
+    const res = await SELF.fetch('https://example.com/api/ai/coach-review', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('ai_not_configured');
+  });
+
+  it('returns review text and generatedAt, persists to ai_settings', async () => {
+    const userId = 'ai-cr-happy';
+    const headers = await authed(userId);
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    const reviewText = 'Great progress this week! Focus on recovery.';
+
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: reviewText }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const res = await SELF.fetch('https://example.com/api/ai/coach-review', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { review: string; generatedAt: string };
+    expect(body.review).toBe(reviewText);
+    expect(typeof body.generatedAt).toBe('string');
+
+    // Verify it was persisted in ai_settings
+    const db = getDb(env.DB);
+    const row = await db.query.aiSettings.findFirst();
+    expect(row?.lastReview).toBe(reviewText);
+    expect(row?.lastReviewAt).toBeDefined();
+  });
+
+  it('returns 502 ai_error on provider failure and does NOT overwrite prior stored review', async () => {
+    const userId = 'ai-cr-failkeep';
+    const headers = await authed(userId);
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    // First: successful review
+    const firstReview = 'Previous stored review text.';
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: firstReview }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+    await SELF.fetch('https://example.com/api/ai/coach-review', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    // Second: provider failure
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response('Internal Server Error', {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    });
+    const failRes = await SELF.fetch('https://example.com/api/ai/coach-review', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(failRes.status).toBe(502);
+    const failBody = (await failRes.json()) as { error: { code: string } };
+    expect(failBody.error.code).toBe('ai_error');
+
+    // The previously stored review must still be intact
+    const db = getDb(env.DB);
+    const row = await db.query.aiSettings.findFirst();
+    expect(row?.lastReview).toBe(firstReview);
+  });
+});
+
+// ─── GET /api/ai/review ───────────────────────────────────────────────────────
+
+describe('GET /api/ai/review', () => {
+  it('returns null when no review has been generated', async () => {
+    const headers = await authed('ai-gr-null');
+    // Store settings but never call coach-review
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+    const res = await SELF.fetch('https://example.com/api/ai/review', { headers });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { review: string | null; generatedAt: string | null };
+    expect(body.review).toBeNull();
+    expect(body.generatedAt).toBeNull();
+  });
+
+  it('returns stored review after coach-review has been called', async () => {
+    const userId = 'ai-gr-stored';
+    const headers = await authed(userId);
+    await SELF.fetch(
+      'https://example.com/api/ai/settings',
+      json(headers, { provider: 'claude', model: 'claude-opus-4-8', apiKey: 'sk-ant-api03-testapikey' }),
+    );
+
+    const storedReview = 'Your training looks excellent!';
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+      return new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: storedReview }],
+          stop_reason: 'end_turn',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+    await SELF.fetch('https://example.com/api/ai/coach-review', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    const res = await SELF.fetch('https://example.com/api/ai/review', { headers });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { review: string; generatedAt: string };
+    expect(body.review).toBe(storedReview);
+    expect(typeof body.generatedAt).toBe('string');
+  });
+
+  it('returns null for user with no ai_settings row', async () => {
+    const headers = await authed('ai-gr-nosettings');
+    const res = await SELF.fetch('https://example.com/api/ai/review', { headers });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { review: null; generatedAt: null };
+    expect(body.review).toBeNull();
+    expect(body.generatedAt).toBeNull();
   });
 });
