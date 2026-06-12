@@ -152,6 +152,14 @@ export const en = {
   'trends.sleep': 'Sleep',
   'trends.avg': 'avg',
   'trends.noData': 'Not enough data yet — keep logging!',
+  'today.workout': 'Workout',
+  'today.restDay': 'Rest day — start one from Train',
+  'today.done': 'Done',
+  'today.weight': 'Weight',
+  'today.sleep': 'Last night',
+  'today.noSleep': 'No sleep logged',
+  'today.noWeight': 'No weight logged yet',
+  'today.eaten': 'eaten',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

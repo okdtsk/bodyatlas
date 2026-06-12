@@ -4,6 +4,7 @@ import { useI18n } from '../i18n';
 import { addDays, dayRangeIso, formatDay, formatTime, sleepDurationLabel } from '../lib/format';
 import { useMeals, useSleep, useMeasurements, type Meal, type SleepRecord, type Measurement } from '../lib/health';
 import { useMe } from '../lib/useMe';
+import { MacroBars } from '../components/MacroBars';
 import { Skeleton } from '../components/Skeleton';
 import { MealFormSheet } from '../components/MealFormSheet';
 import { SleepFormSheet } from '../components/SleepFormSheet';
@@ -28,12 +29,12 @@ function sum(meals: Meal[], field: keyof Pick<Meal, 'calories' | 'proteinG' | 'f
   return meals.reduce((acc, m) => acc + (m[field] ?? 0), 0);
 }
 
-interface ProgressBarProps {
+interface KcalBarProps {
   value: number;
   target: number | null | undefined;
 }
 
-function ProgressBar({ value, target }: ProgressBarProps) {
+function KcalBar({ value, target }: KcalBarProps) {
   const pct = target ? Math.min(100, Math.round((value / target) * 100)) : 0;
   return (
     <div
@@ -148,34 +149,16 @@ export function HealthPage() {
             / {me?.targetKcal != null ? me.targetKcal.toLocaleString() : '—'} {t('health.calories')}
           </span>
         </div>
-        <ProgressBar value={totalKcal} target={me?.targetKcal} />
+        <KcalBar value={totalKcal} target={me?.targetKcal} />
 
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {/* Protein */}
-          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.protein')}</span>
-            <span style={{ fontSize: 13, minWidth: 80 }}>
-              {totalProtein}g / {me?.targetProteinG != null ? `${me.targetProteinG}g` : '—'}
-            </span>
-            <ProgressBar value={totalProtein} target={me?.targetProteinG} />
-          </div>
-          {/* Fat */}
-          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.fat')}</span>
-            <span style={{ fontSize: 13, minWidth: 80 }}>
-              {totalFat}g / {me?.targetFatG != null ? `${me.targetFatG}g` : '—'}
-            </span>
-            <ProgressBar value={totalFat} target={me?.targetFatG} />
-          </div>
-          {/* Carbs */}
-          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.carbs')}</span>
-            <span style={{ fontSize: 13, minWidth: 80 }}>
-              {totalCarbs}g / {me?.targetCarbsG != null ? `${me.targetCarbsG}g` : '—'}
-            </span>
-            <ProgressBar value={totalCarbs} target={me?.targetCarbsG} />
-          </div>
-        </div>
+        <MacroBars
+          proteinG={totalProtein}
+          fatG={totalFat}
+          carbsG={totalCarbs}
+          targetProteinG={me?.targetProteinG}
+          targetFatG={me?.targetFatG}
+          targetCarbsG={me?.targetCarbsG}
+        />
       </div>
 
       {/* Meals section */}

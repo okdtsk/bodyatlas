@@ -154,4 +154,12 @@ export const ja: Record<MessageKey, string> = {
   'trends.sleep': '睡眠',
   'trends.avg': '平均',
   'trends.noData': 'まだデータが足りません — 記録を続けましょう！',
+  'today.workout': 'ワークアウト',
+  'today.restDay': '休養日 — トレーニングはTrainタブから',
+  'today.done': '完了',
+  'today.weight': '体重',
+  'today.sleep': '昨夜の睡眠',
+  'today.noSleep': '睡眠記録なし',
+  'today.noWeight': '体重記録なし',
+  'today.eaten': '摂取',
 };
