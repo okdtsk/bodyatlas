@@ -45,7 +45,7 @@ function ExerciseBlock({
   const deleteSet = useDeleteSet(workoutId, we.id);
   const removeExercise = useRemoveWorkoutExercise(workoutId);
 
-  const targetSets = (we as { targetSets?: number | null }).targetSets ?? null;
+  const targetSets = we.targetSets ?? null;
   const delta = last ? weightDelta(we.sets, last.sets) : null;
   const showDelta = delta !== null && delta !== 0;
 
@@ -113,9 +113,7 @@ function ExerciseBlock({
                   ✕
                 </button>
               </div>
-              {(s as { note?: string | null }).note && (
-                <p className="set-note">{(s as { note?: string | null }).note}</p>
-              )}
+              {s.note && <p className="set-note">{s.note}</p>}
             </div>
           ))}
 
@@ -159,14 +157,9 @@ export function SessionPage() {
 
   // Total sets done and planned (for the ring)
   const totalDone = exercises.reduce((sum, we) => sum + we.sets.length, 0);
-  const hasAnyTarget = exercises.some(
-    (we) => (we as { targetSets?: number | null }).targetSets != null,
-  );
+  const hasAnyTarget = exercises.some((we) => we.targetSets != null);
   const totalPlanned = hasAnyTarget
-    ? exercises.reduce(
-        (sum, we) => sum + ((we as { targetSets?: number | null }).targetSets ?? 0),
-        0,
-      )
+    ? exercises.reduce((sum, we) => sum + (we.targetSets ?? 0), 0)
     : null;
 
   const finish = () =>

@@ -83,7 +83,12 @@ export function SetInputRow({
         <button
           className="btn btn-primary"
           disabled={!valid || busy}
-          onClick={() => onSubmit(build())}
+          onClick={() => {
+            onSubmit(build());
+            // Notes are set-specific (unlike weight/reps which persist) — clear optimistically.
+            setNote('');
+            setNoteOpen(false);
+          }}
           type="button"
         >
           {submitLabel}
@@ -93,6 +98,7 @@ export function SetInputRow({
         <input
           className="input"
           style={{ fontSize: 16 }}
+          aria-label={t('set.note')}
           placeholder={t('set.notePlaceholder')}
           maxLength={200}
           value={note}
