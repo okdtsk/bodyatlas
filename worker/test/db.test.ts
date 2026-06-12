@@ -25,5 +25,19 @@ describe('users table', () => {
       timezone: 'Asia/Tokyo',
       targetKcal: null,
     });
+    expect(user?.createdAt).toBeInstanceOf(Date);
+  });
+
+  it('starts each test with clean tables (reset-db setup)', async () => {
+    const db = getDb(env.DB);
+    // would violate the primary key if the previous test's insert leaked
+    await db.insert(schema.users).values({
+      id: 'user-1',
+      googleSub: 'google-sub-1',
+      email: 'a@example.com',
+      name: 'Alice',
+    });
+    const all = await db.select().from(schema.users);
+    expect(all).toHaveLength(1);
   });
 });

@@ -21,5 +21,5 @@ export default defineConfig({
       };
     }),
   ],
-  test: { setupFiles: ['./test/apply-migrations.ts'] },
+  test: { setupFiles: ['./test/apply-migrations.ts', './test/reset-db.ts'] },
 });
