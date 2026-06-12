@@ -162,4 +162,12 @@ export const ja: Record<MessageKey, string> = {
   'today.noSleep': '睡眠記録なし',
   'today.noWeight': '体重記録なし',
   'today.eaten': '摂取',
+  'settings.tokens': 'APIトークン',
+  'settings.tokenName': 'トークン名',
+  'settings.createToken': 'トークンを作成',
+  'settings.tokenCreated': 'このトークンを今すぐコピーしてください — 再表示されません。',
+  'settings.revoke': '失効',
+  'settings.lastUsed': '最終使用',
+  'settings.neverUsed': '未使用',
+  'settings.mcpHint': 'MCPサーバーで使用 — docs/mcp-setup.md 参照',
 };

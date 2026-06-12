@@ -160,6 +160,14 @@ export const en = {
   'today.noSleep': 'No sleep logged',
   'today.noWeight': 'No weight logged yet',
   'today.eaten': 'eaten',
+  'settings.tokens': 'API tokens',
+  'settings.tokenName': 'Token name',
+  'settings.createToken': 'Create token',
+  'settings.tokenCreated': 'Copy this token now — it will not be shown again.',
+  'settings.revoke': 'Revoke',
+  'settings.lastUsed': 'Last used',
+  'settings.neverUsed': 'Never used',
+  'settings.mcpHint': 'Use with the MCP server — see docs/mcp-setup.md',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

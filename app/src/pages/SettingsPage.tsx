@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { LOCALES, THEMES, type UpdateMe } from '@bodyatlas/shared';
 import { useI18n, type MessageKey } from '../i18n';
 import { api } from '../lib/api';
+import { useCreateToken, useRevokeToken, useTokens, type CreatedToken } from '../lib/tokens';
 import { useMe } from '../lib/useMe';
 
 export function SettingsPage() {
@@ -20,6 +22,13 @@ export function SettingsPage() {
     },
   });
 
+  const { data: tokens = [] } = useTokens();
+  const createToken = useCreateToken();
+  const revokeToken = useRevokeToken();
+
+  const [newTokenName, setNewTokenName] = useState('');
+  const [createdToken, setCreatedToken] = useState<CreatedToken | null>(null);
+
   if (!me) return null;
 
   const fieldStyle = {
@@ -33,6 +42,35 @@ export function SettingsPage() {
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
   } as const;
+
+  const handleCreateToken = async () => {
+    if (!newTokenName.trim()) return;
+    try {
+      const result = await createToken.mutateAsync(newTokenName.trim());
+      setCreatedToken(result);
+      setNewTokenName('');
+    } catch {
+      // error handled by mutation state
+    }
+  };
+
+  const handleCopyToken = async () => {
+    if (!createdToken) return;
+    try {
+      await navigator.clipboard.writeText(createdToken.token);
+    } catch {
+      // clipboard not available — user can copy manually
+    }
+  };
+
+  const handleRevokeToken = async (id: string) => {
+    if (!window.confirm(t('settings.revoke') + '?')) return;
+    try {
+      await revokeToken.mutateAsync(id);
+    } catch {
+      // error handled by mutation state
+    }
+  };
 
   return (
     <section>
@@ -101,6 +139,117 @@ export function SettingsPage() {
             />
           </label>
         ))}
+      </section>
+
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: '1rem', marginBottom: 12 }}>{t('settings.tokens')}</h2>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <input
+            placeholder={t('settings.tokenName')}
+            value={newTokenName}
+            onChange={(e) => setNewTokenName(e.target.value)}
+            style={{ ...fieldStyle, marginTop: 0, flex: '1 1 200px' }}
+          />
+          <button
+            type="button"
+            onClick={handleCreateToken}
+            disabled={!newTokenName.trim() || createToken.isPending}
+            style={{
+              padding: '10px 16px',
+              background: 'var(--surface-2)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              cursor: newTokenName.trim() ? 'pointer' : 'not-allowed',
+              opacity: newTokenName.trim() ? 1 : 0.5,
+            }}
+          >
+            {t('settings.createToken')}
+          </button>
+        </div>
+
+        {createdToken && (
+          <div className="glow-card is-active" style={{ marginBottom: 16, padding: 16 }}>
+            <p style={{ color: 'var(--positive)', marginBottom: 8 }}>
+              {t('settings.tokenCreated')}
+            </p>
+            <code
+              style={{
+                display: 'block',
+                wordBreak: 'break-all',
+                marginBottom: 8,
+                padding: 8,
+                background: 'var(--surface-2)',
+                borderRadius: 'var(--radius)',
+              }}
+            >
+              {createdToken.token}
+            </code>
+            <button
+              type="button"
+              onClick={handleCopyToken}
+              style={{
+                padding: '6px 12px',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                cursor: 'pointer',
+                marginBottom: 8,
+              }}
+            >
+              Copy
+            </button>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+              {t('settings.mcpHint')}
+            </p>
+          </div>
+        )}
+
+        {tokens.length > 0 && (
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {tokens.map((tok) => (
+              <li
+                key={tok.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 0',
+                  borderBottom: '1px solid var(--border)',
+                }}
+              >
+                <div>
+                  <span style={{ fontWeight: 500 }}>{tok.name}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>
+                    {t('settings.lastUsed')}:{' '}
+                    {tok.lastUsedAt
+                      ? new Date(tok.lastUsedAt).toLocaleDateString()
+                      : t('settings.neverUsed')}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {new Date(tok.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRevokeToken(tok.id)}
+                  style={{
+                    padding: '6px 12px',
+                    background: 'var(--surface-2)',
+                    color: 'var(--negative)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('settings.revoke')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {update.isSuccess && (
