@@ -8,3 +8,12 @@ describe('GET /api/health', () => {
     expect(await res.json()).toEqual({ ok: true });
   });
 });
+
+describe('unknown API route', () => {
+  it('returns the JSON error envelope', async () => {
+    const res = await SELF.fetch('https://example.com/api/nope');
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('not_found');
+  });
+});

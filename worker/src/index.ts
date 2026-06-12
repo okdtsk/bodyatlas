@@ -5,6 +5,10 @@ export const apiApp = new Hono<AppEnv>().get('/health', (c) => c.json({ ok: true
 
 const app = new Hono<AppEnv>();
 
+app.notFound((c) =>
+  c.json({ error: { code: 'not_found', message: 'Not found' } }, 404),
+);
+
 app.onError((err, c) => {
   console.error('unhandled error', err);
   return c.json(

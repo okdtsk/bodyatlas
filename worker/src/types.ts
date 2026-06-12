@@ -7,5 +7,11 @@ export type Bindings = {
 
 export type AppEnv = {
   Bindings: Bindings;
+  Variables: { userId?: string };
+};
+
+/** For sub-apps mounted behind the auth middleware, where userId is guaranteed. */
+export type ProtectedEnv = {
+  Bindings: Bindings;
   Variables: { userId: string };
 };
