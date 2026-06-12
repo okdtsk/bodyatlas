@@ -1,8 +1,9 @@
 import { zValidator } from '@hono/zod-validator';
 import { createExerciseSchema, updateExerciseSchema } from '@bodyatlas/shared';
-import { and, asc, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema } from '../db';
+import { likeContains } from '../lib/sql';
 import type { ProtectedEnv } from '../types';
 
 const validationError = (issues: unknown) =>
@@ -23,8 +24,8 @@ export const exercisesRoutes = new Hono<ProtectedEnv>()
           includeArchived ? undefined : eq(schema.exercises.isArchived, false),
           q
             ? or(
-                like(schema.exercises.nameEn, `%${q}%`),
-                like(schema.exercises.nameJa, `%${q}%`),
+                likeContains(schema.exercises.nameEn, q),
+                likeContains(schema.exercises.nameJa, q),
               )
             : undefined,
         ),

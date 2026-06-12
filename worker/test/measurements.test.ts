@@ -46,4 +46,22 @@ describe('/api/measurements', () => {
     const headers = await authed();
     expect((await SELF.fetch('https://example.com/api/measurements', json(headers, {}))).status).toBe(422);
   });
+
+  it('scopes updates and deletes to the owner', async () => {
+    const headers = await authed();
+    await seedUser('user-2');
+    const theirs = (await (
+      await SELF.fetch(
+        'https://example.com/api/measurements',
+        json({ Cookie: await sessionCookieFor('user-2') }, { weightKg: 80 }),
+      )
+    ).json()) as { id: string };
+
+    expect(
+      (await SELF.fetch(`https://example.com/api/measurements/${theirs.id}`, json(headers, { weightKg: 60 }, 'PUT'))).status,
+    ).toBe(404);
+    expect(
+      (await SELF.fetch(`https://example.com/api/measurements/${theirs.id}`, { headers, method: 'DELETE' })).status,
+    ).toBe(404);
+  });
 });

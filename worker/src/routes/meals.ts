@@ -1,8 +1,9 @@
 import { zValidator } from '@hono/zod-validator';
 import { mealFavoriteSchema, mealInputSchema } from '@bodyatlas/shared';
-import { and, asc, desc, eq, gte, like, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema } from '../db';
+import { likeContains } from '../lib/sql';
 import type { ProtectedEnv } from '../types';
 
 const validationError = (issues: unknown) =>
@@ -13,6 +14,7 @@ const validateMeal = zValidator('json', mealInputSchema, (result, c) => {
   if (!result.success) return c.json(validationError(result.error.issues), 422);
 });
 
+// Full-replace EXCEPT the timestamp: omitting eatenAt preserves the stored value (defaultFn only applies on create).
 function toRow(input: import('@bodyatlas/shared').MealInput) {
   return {
     name: input.name,
@@ -57,7 +59,7 @@ export const mealsRoutes = new Hono<ProtectedEnv>()
       .where(
         and(
           eq(schema.meals.userId, c.get('userId')),
-          q ? like(schema.meals.name, `%${q}%`) : undefined,
+          q ? likeContains(schema.meals.name, q) : undefined,
         ),
       )
       .orderBy(desc(schema.meals.eatenAt))

@@ -29,6 +29,18 @@ describe('/api/exercises', () => {
     expect(list.every((e) => e.id !== 'seed-back-squat')).toBe(true);
   });
 
+  it('treats LIKE metacharacters in the query as literals', async () => {
+    const headers = await authed();
+    await seedCustomExercise('pct', 'user-1', { nameEn: '100% Effort Press' });
+    const res = await SELF.fetch(
+      `https://example.com/api/exercises?q=${encodeURIComponent('%')}`,
+      { headers },
+    );
+    const list = (await res.json()) as Array<{ id: string }>;
+    // '%' must match only names containing a literal '%', not act as match-all.
+    expect(list.map((e) => e.id)).toEqual(['pct']);
+  });
+
   it('creates a custom exercise', async () => {
     const headers = await authed();
     const res = await SELF.fetch('https://example.com/api/exercises', {

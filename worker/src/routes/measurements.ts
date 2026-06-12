@@ -13,6 +13,7 @@ const validate = zValidator('json', measurementInputSchema, (result, c) => {
   if (!result.success) return c.json(validationError(result.error.issues), 422);
 });
 
+// Full-replace EXCEPT the timestamp: omitting measuredAt preserves the stored value (defaultFn only applies on create).
 function toRow(input: MeasurementInput) {
   return {
     ...(input.measuredAt ? { measuredAt: new Date(input.measuredAt) } : {}),

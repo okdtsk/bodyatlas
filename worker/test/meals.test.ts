@@ -67,6 +67,23 @@ describe('/api/meals', () => {
     expect(results.map((r) => r.name)).toEqual(['プロテイン']);
   });
 
+  it('treats LIKE metacharacters in the query as literals', async () => {
+    const headers = await authed();
+    await SELF.fetch('https://example.com/api/meals', json(headers, { name: '100%ジュース' }));
+    await SELF.fetch('https://example.com/api/meals', json(headers, { name: 'プロテイン' }));
+
+    const exact = (await (
+      await SELF.fetch(`https://example.com/api/meals/search?q=${encodeURIComponent('100%')}`, { headers })
+    ).json()) as Array<{ name: string }>;
+    expect(exact.map((r) => r.name)).toEqual(['100%ジュース']);
+
+    // '%' alone must match only names containing a literal '%', not act as match-all.
+    const literalPercent = (await (
+      await SELF.fetch(`https://example.com/api/meals/search?q=${encodeURIComponent('%')}`, { headers })
+    ).json()) as Array<{ name: string }>;
+    expect(literalPercent.map((r) => r.name)).toEqual(['100%ジュース']);
+  });
+
   it('updates and deletes a meal, scoped to the owner', async () => {
     const headers = await authed();
     await seedUser('user-2');
