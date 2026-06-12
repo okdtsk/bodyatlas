@@ -92,15 +92,16 @@ export function TemplateEditorPage() {
                 aria-label={t('train.targetSets')}
                 placeholder={t('train.targetSets')}
                 value={row.targetSets ?? ''}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
                   setRows((prev) =>
                     prev.map((r, j) =>
                       j === i
-                        ? { ...r, targetSets: e.target.value === '' ? undefined : Number(e.target.value) }
+                        ? { ...r, targetSets: Number.isNaN(parsed) ? undefined : parsed }
                         : r,
                     ),
-                  )
-                }
+                  );
+                }}
               />
               <button className="btn" aria-label={`up-${i}`} onClick={() => move(i, -1)}>↑</button>
               <button className="btn" aria-label={`down-${i}`} onClick={() => move(i, 1)}>↓</button>

@@ -34,6 +34,7 @@ describe('TemplateEditorPage', () => {
   it('creates a template with picked exercises', async () => {
     const spy = mockApi({
       'GET /api/exercises': exercises,
+      'GET /api/templates': [],
       'POST /api/templates': { id: 't-new', name: 'Push A', templateExercises: [] },
     });
     renderEditor('/train/templates/new');
