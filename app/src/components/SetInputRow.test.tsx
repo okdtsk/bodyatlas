@@ -31,6 +31,14 @@ describe('SetInputRow', () => {
     expect(onSubmit).toHaveBeenCalledWith({ durationSec: 1500, distanceM: 5000 });
   });
 
+  it('accepts comma decimals from JA keyboards', async () => {
+    const onSubmit = renderRow('strength');
+    await userEvent.type(screen.getByLabelText('kg'), '82,5');
+    await userEvent.type(screen.getByLabelText('reps'), '8');
+    await userEvent.click(screen.getByRole('button', { name: 'Log set' }));
+    expect(onSubmit).toHaveBeenCalledWith({ weightKg: 82.5, reps: 8 });
+  });
+
   it('disables submit when nothing countable is entered', async () => {
     renderRow('strength');
     expect(screen.getByRole('button', { name: 'Log set' })).toBeDisabled();

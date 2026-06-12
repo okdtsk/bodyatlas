@@ -32,11 +32,17 @@ function ExerciseBlock({
     <div className="card stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <strong>{exerciseName(we.exercise, locale)}</strong>
-        {we.sets.length === 0 && (
-          <button className="btn" onClick={() => removeExercise.mutate(we.id)} aria-label={`remove-${we.id}`}>
-            ✕
-          </button>
-        )}
+        <button
+          className="btn"
+          aria-label={`remove-${we.id}`}
+          onClick={() => {
+            if (we.sets.length === 0 || window.confirm(t('common.confirmDelete'))) {
+              removeExercise.mutate(we.id);
+            }
+          }}
+        >
+          ✕
+        </button>
       </div>
 
       <div className="muted">
@@ -60,6 +66,7 @@ function ExerciseBlock({
         </div>
       ))}
 
+      {/* Input values intentionally persist after logging (common gym pattern: same weight across sets). */}
       <SetInputRow
         exerciseType={we.exercise.type}
         submitLabel={t('train.logSet')}
