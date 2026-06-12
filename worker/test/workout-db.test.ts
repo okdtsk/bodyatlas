@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:test';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, isNull } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { getDb, schema } from '../src/db';
 import { seedUser } from './helpers';
@@ -60,5 +60,24 @@ describe('workout tables', () => {
 
     expect(await db.select().from(schema.sets)).toHaveLength(0);
     expect(await db.select().from(schema.workoutExercises)).toHaveLength(0);
+  });
+});
+
+describe('seed exercise catalog', () => {
+  it('ships seed exercises with EN/JA names and survives the per-test reset', async () => {
+    const db = getDb(env.DB);
+    const seeds = await db.select().from(schema.exercises).where(isNull(schema.exercises.userId));
+    expect(seeds.length).toBeGreaterThanOrEqual(35);
+
+    const bench = seeds.find((e) => e.id === 'seed-barbell-bench-press');
+    expect(bench).toMatchObject({
+      nameEn: 'Barbell Bench Press',
+      nameJa: 'ベンチプレス',
+      type: 'strength',
+      muscleGroup: 'chest',
+      equipment: 'barbell',
+    });
+    const hack = seeds.find((e) => e.id === 'seed-machine-hack-squat');
+    expect(hack?.nameJa).toBe('ハックスクワット');
   });
 });
