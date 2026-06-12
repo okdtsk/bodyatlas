@@ -11,7 +11,11 @@ import { templatesRoutes } from './routes/templates';
 import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
-import type { AppEnv } from './types';
+import type { AppEnv, Bindings } from './types';
+import { BodyAtlasMCP } from './mcp/server';
+import { verifyToken } from './auth/tokens';
+
+export { BodyAtlasMCP };
 
 export const apiApp = new Hono<AppEnv>()
   .get('/health', (c) => c.json({ ok: true }))
@@ -45,4 +49,25 @@ app.route('/auth', authRoutes);
 app.route('/auth', testLoginRoutes);
 
 export type AppType = typeof apiApp;
-export default app;
+
+const mcpHandler = BodyAtlasMCP.serve('/mcp', { binding: 'BODYATLAS_MCP' });
+
+export default {
+  async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/')) {
+      const auth = request.headers.get('Authorization') ?? '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+      const userId = token ? await verifyToken(env.DB, token) : null;
+      if (!userId) {
+        return Response.json(
+          { error: { code: 'unauthorized', message: 'Valid bearer token required' } },
+          { status: 401 },
+        );
+      }
+      (ctx as ExecutionContext & { props: { userId: string } }).props = { userId };
+      return mcpHandler.fetch(request, env, ctx);
+    }
+    return app.fetch(request, env, ctx);
+  },
+};

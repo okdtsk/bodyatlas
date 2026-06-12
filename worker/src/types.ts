@@ -1,6 +1,7 @@
 export type Bindings = {
   DB: D1Database;
   SESSIONS: KVNamespace;
+  BODYATLAS_MCP: DurableObjectNamespace;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   E2E_TEST_LOGIN?: string;

@@ -8,8 +8,12 @@
   "assets": {
     "directory": "./public-stub",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/auth/*"]
+    "run_worker_first": ["/api/*", "/auth/*", "/mcp", "/mcp/*"]
   },
+  "durable_objects": {
+    "bindings": [{ "name": "BODYATLAS_MCP", "class_name": "BodyAtlasMCP" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BodyAtlasMCP"] }],
   "d1_databases": [
     {
       "binding": "DB",
