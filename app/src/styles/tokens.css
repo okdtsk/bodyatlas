@@ -1,0 +1,46 @@
+/* Gym Dark — default */
+:root,
+:root[data-theme='gym-dark'] {
+  --bg: #0d0f12;
+  --surface: #16191e;
+  --surface-2: #1e2228;
+  --border: #232830;
+  --text: #e8eaed;
+  --text-muted: #9aa3ad;
+  --accent: #d8f34e;
+  --accent-contrast: #0d0f12;
+  --positive: #4ade80;
+  --negative: #f87171;
+  --radius: 12px;
+  --font-weight-heading: 800;
+}
+
+:root[data-theme='clinical-light'] {
+  --bg: #f7f9fa;
+  --surface: #ffffff;
+  --surface-2: #eef2f5;
+  --border: #e3e8ed;
+  --text: #1a2330;
+  --text-muted: #7a8694;
+  --accent: #3b82c4;
+  --accent-contrast: #ffffff;
+  --positive: #2f9e6e;
+  --negative: #d64545;
+  --radius: 10px;
+  --font-weight-heading: 700;
+}
+
+:root[data-theme='warm-journal'] {
+  --bg: #faf6ef;
+  --surface: #ffffff;
+  --surface-2: #efe9df;
+  --border: #e8e0d2;
+  --text: #3d3429;
+  --text-muted: #a39580;
+  --accent: #d98e4a;
+  --accent-contrast: #ffffff;
+  --positive: #7a9b76;
+  --negative: #c26d5a;
+  --radius: 14px;
+  --font-weight-heading: 700;
+}
