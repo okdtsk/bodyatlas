@@ -16,6 +16,8 @@ export default defineConfig({
             TEST_MIGRATIONS: migrations,
             GOOGLE_CLIENT_ID: 'test-client-id',
             GOOGLE_CLIENT_SECRET: 'test-client-secret',
+            // Explicitly absent so the gate test works regardless of .dev.vars
+            E2E_TEST_LOGIN: '',
           },
         },
       };

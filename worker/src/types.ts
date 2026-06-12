@@ -3,6 +3,7 @@ export type Bindings = {
   SESSIONS: KVNamespace;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  E2E_TEST_LOGIN?: string;
 };
 
 export type AppEnv = {

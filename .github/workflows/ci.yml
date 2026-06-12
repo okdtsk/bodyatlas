@@ -18,3 +18,17 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: printf 'GOOGLE_CLIENT_ID=ci\nGOOGLE_CLIENT_SECRET=ci\nE2E_TEST_LOGIN=1\n' > worker/.dev.vars
+      - run: npm run e2e

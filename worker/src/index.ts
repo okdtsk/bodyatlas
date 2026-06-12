@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authRoutes } from './auth/google';
+import { testLoginRoutes } from './auth/test-login';
 import { requireAuth } from './auth/middleware';
 import { exercisesRoutes } from './routes/exercises';
 import { measurementsRoutes } from './routes/measurements';
@@ -39,6 +40,7 @@ app.onError((err, c) => {
 
 app.route('/api', apiApp);
 app.route('/auth', authRoutes);
+app.route('/auth', testLoginRoutes);
 
 export type AppType = typeof apiApp;
 export default app;
