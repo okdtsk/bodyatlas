@@ -1,5 +1,13 @@
 import type { Locale } from '@bodyatlas/shared';
 
+/** Parses a decimal string; '' → undefined; invalid → undefined. Accepts comma decimals (JA keyboards). */
+export function parseDecimal(v: string): number | undefined {
+  const trimmed = v.trim();
+  if (trimmed === '') return undefined;
+  const n = Number(trimmed.replace(',', '.'));
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export function trimNum(n: number): string {
   return String(n);
 }

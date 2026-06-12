@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import type { ExerciseType, SetInput } from '@bodyatlas/shared';
 import { useI18n } from '../i18n';
+import { parseDecimal } from '../lib/format';
 
-/** Parses a decimal string; '' → undefined; invalid → undefined. Accepts comma decimals (JA keyboards). */
-function num(v: string): number | undefined {
-  const trimmed = v.trim();
-  if (trimmed === '') return undefined;
-  const n = Number(trimmed.replace(',', '.'));
-  return Number.isFinite(n) ? n : undefined;
-}
+const num = parseDecimal;
 
 export function SetInputRow({
   exerciseType,
