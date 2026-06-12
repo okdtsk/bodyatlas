@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
+import { useStartWorkout } from '../lib/train';
 
-const ACTIONS: { key: MessageKey; icon: string }[] = [
-  { key: 'quickLog.set', icon: '🏋️' },
+const DISABLED_ACTIONS: { key: MessageKey; icon: string }[] = [
   { key: 'quickLog.meal', icon: '🍽' },
   { key: 'quickLog.weight', icon: '⚖️' },
   { key: 'quickLog.sleep', icon: '🌙' },
@@ -10,6 +11,8 @@ const ACTIONS: { key: MessageKey; icon: string }[] = [
 
 export function QuickLogSheet({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const start = useStartWorkout();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -18,6 +21,15 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const logSet = () => {
+    start.mutate({}, {
+      onSuccess: () => {
+        onClose();
+        navigate('/train/session');
+      },
+    });
+  };
 
   return (
     <div
@@ -49,7 +61,28 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
         <h2 style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--text-muted)' }}>
           {t('quickLog.title')}
         </h2>
-        {ACTIONS.map(({ key, icon }) => (
+        <button
+          onClick={logSet}
+          disabled={start.isPending}
+          style={{
+            display: 'flex',
+            gap: 12,
+            alignItems: 'center',
+            width: '100%',
+            padding: 12,
+            marginBottom: 8,
+            background: 'var(--surface-2)',
+            border: 'none',
+            borderRadius: 'var(--radius)',
+            color: 'var(--text)',
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        >
+          <span>🏋️</span>
+          <span>{t('quickLog.set')}</span>
+        </button>
+        {DISABLED_ACTIONS.map(({ key, icon }) => (
           <button
             key={key}
             disabled
