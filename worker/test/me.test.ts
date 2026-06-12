@@ -34,6 +34,7 @@ describe('/api/me', () => {
       locale: 'en',
     });
     expect(me).not.toHaveProperty('googleSub');
+    expect(me).not.toHaveProperty('createdAt');
   });
 
   it('only ever returns the session user, not others', async () => {
@@ -71,5 +72,35 @@ describe('/api/me', () => {
     const body = (await res.json()) as { error: { code: string; details: unknown } };
     expect(body.error.code).toBe('validation');
     expect(body.error.details).toBeTruthy();
+  });
+
+  it('rejects an invalid IANA timezone with 422', async () => {
+    await seedUser('user-1');
+    const res = await SELF.fetch('https://example.com/api/me', {
+      method: 'PATCH',
+      headers: {
+        Cookie: await sessionCookieFor('user-1'),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ timezone: 'Not/A/Zone' }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('validation');
+  });
+
+  it('clears a nutrition target by patching it to null', async () => {
+    await seedUser('user-1', { targetKcal: 2000 });
+    const res = await SELF.fetch('https://example.com/api/me', {
+      method: 'PATCH',
+      headers: {
+        Cookie: await sessionCookieFor('user-1'),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ targetKcal: null }),
+    });
+    expect(res.status).toBe(200);
+    const me = (await res.json()) as { targetKcal: number | null };
+    expect(me.targetKcal).toBeNull();
   });
 });
