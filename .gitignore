@@ -5,3 +5,6 @@ dist/
 .wrangler/
 playwright-report/
 test-results/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/DerivedData/
+ios/App/output/

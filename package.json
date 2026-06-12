@@ -12,9 +12,16 @@
     "test": "npm run test -ws --if-present",
     "typecheck": "npm run typecheck -ws --if-present",
     "deploy": "npm run deploy -w app",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "cap:sync": "npm run build && cap sync ios",
+    "cap:open": "cap open ios"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@playwright/test": "^1.60.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0"
   }
 }
