@@ -4,6 +4,7 @@ import { requireAuth } from './auth/middleware';
 import { exercisesRoutes } from './routes/exercises';
 import { meRoutes } from './routes/me';
 import { templatesRoutes } from './routes/templates';
+import { workoutsRoutes } from './routes/workouts';
 import type { AppEnv } from './types';
 
 export const apiApp = new Hono<AppEnv>()
@@ -11,7 +12,8 @@ export const apiApp = new Hono<AppEnv>()
   .use(requireAuth)
   .route('/me', meRoutes)
   .route('/exercises', exercisesRoutes)
-  .route('/templates', templatesRoutes);
+  .route('/templates', templatesRoutes)
+  .route('/workouts', workoutsRoutes);
 
 const app = new Hono<AppEnv>();
 
