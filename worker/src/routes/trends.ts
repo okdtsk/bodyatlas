@@ -1,7 +1,7 @@
 import { and, asc, eq, gte } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema } from '../db';
-import { epley1rm } from '../lib/stats';
+import { strengthSeries } from '../lib/stats';
 import type { ProtectedEnv } from '../types';
 
 const DEFAULT_WINDOW_DAYS = 84;
@@ -18,43 +18,8 @@ export const trendsRoutes = new Hono<ProtectedEnv>()
     const from = parseFrom(c.req.query('from'));
     if (!from) return c.json(invalidFrom, 422);
     const db = getDb(c.env.DB);
-    const rows = await db
-      .select({
-        workoutId: schema.workouts.id,
-        startedAt: schema.workouts.startedAt,
-        weightKg: schema.sets.weightKg,
-        reps: schema.sets.reps,
-      })
-      .from(schema.sets)
-      .innerJoin(schema.workoutExercises, eq(schema.sets.workoutExerciseId, schema.workoutExercises.id))
-      .innerJoin(schema.workouts, eq(schema.workoutExercises.workoutId, schema.workouts.id))
-      .where(
-        and(
-          eq(schema.workouts.userId, c.get('userId')),
-          eq(schema.workoutExercises.exerciseId, c.req.param('exerciseId')),
-          gte(schema.workouts.startedAt, from),
-        ),
-      )
-      .orderBy(asc(schema.workouts.startedAt));
-
-    const byWorkout = new Map<string, { workoutId: string; startedAt: Date; topWeightKg: number | null; est1rm: number | null; setCount: number }>();
-    for (const row of rows) {
-      const entry = byWorkout.get(row.workoutId) ?? {
-        workoutId: row.workoutId,
-        startedAt: row.startedAt,
-        topWeightKg: null,
-        est1rm: null,
-        setCount: 0,
-      };
-      entry.setCount += 1;
-      if (row.weightKg !== null && (entry.topWeightKg === null || row.weightKg > entry.topWeightKg)) {
-        entry.topWeightKg = row.weightKg;
-      }
-      const oneRm = epley1rm(row.weightKg, row.reps);
-      if (oneRm !== null && (entry.est1rm === null || oneRm > entry.est1rm)) entry.est1rm = oneRm;
-      byWorkout.set(row.workoutId, entry);
-    }
-    return c.json([...byWorkout.values()]);
+    const series = await strengthSeries(db, c.get('userId'), c.req.param('exerciseId'), from);
+    return c.json(series);
   })
   .get('/volume', async (c) => {
     const from = parseFrom(c.req.query('from'));
