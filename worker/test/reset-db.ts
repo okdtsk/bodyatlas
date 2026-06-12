@@ -11,6 +11,7 @@ const USER_TABLES = [
   'meals',
   'sleep_records',
   'body_measurements',
+  'api_tokens',
 ];
 
 beforeEach(async () => {

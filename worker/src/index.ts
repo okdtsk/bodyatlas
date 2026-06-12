@@ -8,6 +8,7 @@ import { mealsRoutes } from './routes/meals';
 import { meRoutes } from './routes/me';
 import { sleepRoutes } from './routes/sleep';
 import { templatesRoutes } from './routes/templates';
+import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
 import type { AppEnv } from './types';
@@ -22,7 +23,8 @@ export const apiApp = new Hono<AppEnv>()
   .route('/meals', mealsRoutes)
   .route('/sleep', sleepRoutes)
   .route('/measurements', measurementsRoutes)
-  .route('/trends', trendsRoutes);
+  .route('/trends', trendsRoutes)
+  .route('/tokens', tokensRoutes);
 
 const app = new Hono<AppEnv>();
 
