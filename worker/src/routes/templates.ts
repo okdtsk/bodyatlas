@@ -25,7 +25,7 @@ async function loadTemplate(db: Db, userId: string, id: string) {
   });
 }
 
-/** All referenced exercises must exist and be visible to the user (seed or own). */
+/** All referenced exercises must exist, be unarchived, and be visible to the user (seed or own). */
 async function exercisesVisible(db: Db, userId: string, input: TemplateInput): Promise<boolean> {
   const ids = input.exercises.map((e) => e.exerciseId);
   const found = await db
@@ -34,6 +34,7 @@ async function exercisesVisible(db: Db, userId: string, input: TemplateInput): P
     .where(
       and(
         inArray(schema.exercises.id, ids),
+        eq(schema.exercises.isArchived, false),
         or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
       ),
     );
