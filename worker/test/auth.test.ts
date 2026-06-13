@@ -29,6 +29,53 @@ describe('GET /auth/google', () => {
   });
 });
 
+/** Mocks Google's token endpoint for the next fetch made by the Worker. */
+function mockGoogleTokenEndpoint(idToken: string) {
+  // Each call to the mock must construct a fresh Response so the body stream
+  // is created inside the Worker's request context (see note at the top).
+  vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {
+    return new Response(JSON.stringify({ id_token: idToken }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+}
+
+/** Starts the native OAuth flow and returns the oauth cookie + state. */
+async function startNativeFlow(): Promise<{ cookie: string; state: string }> {
+  const res = await SELF.fetch('https://example.com/auth/google?native=1', {
+    redirect: 'manual',
+  });
+  expect(res.status).toBe(302);
+  const setCookie = res.headers.get('Set-Cookie')!;
+  const match = /ba_oauth=([^;]+)/.exec(setCookie);
+  expect(match).not.toBeNull();
+  const cookieValue = match![1]!;
+  const payload = JSON.parse(decodeURIComponent(cookieValue)) as {
+    state: string;
+    verifier: string;
+    native?: boolean;
+  };
+  expect(payload.native).toBe(true);
+  return { cookie: `ba_oauth=${cookieValue}`, state: payload.state };
+}
+
+/** Drives the full native callback and returns the one-time exchange code. */
+async function driveNativeCallback(sub = 'g-native'): Promise<string> {
+  const { cookie, state } = await startNativeFlow();
+  mockGoogleTokenEndpoint(
+    fakeIdToken({ sub, email: `${sub}@example.com`, name: 'Native User' }),
+  );
+  const res = await SELF.fetch(
+    `https://example.com/auth/google/callback?code=c1&state=${state}`,
+    { headers: { Cookie: cookie }, redirect: 'manual' },
+  );
+  expect(res.status).toBe(302);
+  const location = res.headers.get('Location')!;
+  expect(location.startsWith('com.okdtsk.bodyatlas://auth?code=')).toBe(true);
+  return new URL(location).searchParams.get('code')!;
+}
+
 describe('GET /auth/google/callback', () => {
   it('rejects a state mismatch', async () => {
     const cookie = `ba_oauth=${encodeURIComponent(
@@ -75,5 +122,91 @@ describe('GET /auth/google/callback', () => {
       where: eq(schema.users.googleSub, 'g-123'),
     });
     expect(user?.email).toBe('a@example.com');
+  });
+});
+
+describe('native OAuth flow', () => {
+  it('redirects the native callback to the app scheme with a one-time code and no session cookie', async () => {
+    const { cookie, state } = await startNativeFlow();
+    mockGoogleTokenEndpoint(
+      fakeIdToken({ sub: 'g-native-1', email: 'n1@example.com', name: 'Nat' }),
+    );
+
+    const res = await SELF.fetch(
+      `https://example.com/auth/google/callback?code=c1&state=${state}`,
+      { headers: { Cookie: cookie }, redirect: 'manual' },
+    );
+
+    expect(res.status).toBe(302);
+    const location = res.headers.get('Location')!;
+    expect(location.startsWith('com.okdtsk.bodyatlas://auth?code=')).toBe(true);
+    expect(new URL(location).searchParams.get('code')).toBeTruthy();
+    expect(res.headers.get('Set-Cookie') ?? '').not.toContain('ba_session=');
+  });
+
+  it('exchanges the one-time code for a session cookie that authenticates', async () => {
+    const code = await driveNativeCallback('g-native-2');
+
+    const res = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const setCookie = res.headers.get('Set-Cookie')!;
+    expect(setCookie).toContain('ba_session=');
+    const sessionCookie = /ba_session=[^;]+/.exec(setCookie)![0];
+
+    const me = await SELF.fetch('https://example.com/api/me', {
+      headers: { Cookie: sessionCookie },
+    });
+    expect(me.status).toBe(200);
+    const body = (await me.json()) as { email: string };
+    expect(body.email).toBe('g-native-2@example.com');
+  });
+
+  it('rejects a code on second use (single-use)', async () => {
+    const code = await driveNativeCallback('g-native-3');
+
+    const first = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    expect(first.status).toBe(200);
+
+    const second = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    expect(second.status).toBe(400);
+  });
+
+  it('rejects an unknown code', async () => {
+    const res = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: crypto.randomUUID() }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a malformed body and a missing code', async () => {
+    const notJson = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'not json',
+    });
+    expect(notJson.status).toBe(400);
+
+    const missingCode = await SELF.fetch('https://example.com/auth/native/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(missingCode.status).toBe(400);
   });
 });

@@ -8,6 +8,7 @@ export const en = {
   'login.welcome': 'Track your training, meals, and health in one place.',
   'login.signIn': 'Sign in with Google',
   'login.loading': 'Loading…',
+  'login.nativeError': 'Sign-in failed. Please try again.',
   'quickLog.title': 'Quick log',
   'quickLog.set': 'Log a set',
   'quickLog.meal': 'Log a meal',

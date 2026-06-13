@@ -60,6 +60,21 @@ export async function healthRequestAuth(): Promise<{ granted: boolean }> {
   return bridge.requestAuthorization();
 }
 
+/**
+ * Run Google sign-in via the native NativeAuth plugin (ASWebAuthenticationSession).
+ * Resolves with the one-time code to POST to /auth/native/exchange.
+ * Rejects with "canceled" when the user dismisses the browser sheet.
+ */
+export async function nativeGoogleSignIn(): Promise<{ code: string }> {
+  const bridge = (
+    window as {
+      Capacitor?: { Plugins?: { NativeAuth?: { signIn: () => Promise<{ code: string }> } } };
+    }
+  ).Capacitor?.Plugins?.NativeAuth;
+  if (!bridge) throw new Error('NativeAuth plugin not available');
+  return bridge.signIn();
+}
+
 /** Query Apple Health samples for the past `days` days (1-90, default 30). */
 export async function healthQuerySamples(days = 30): Promise<HealthSyncSamples> {
   const bridge = (

@@ -10,6 +10,7 @@ export const ja: Record<MessageKey, string> = {
   'login.welcome': 'トレーニング・食事・健康をひとつのアプリで記録。',
   'login.signIn': 'Google でサインイン',
   'login.loading': '読み込み中…',
+  'login.nativeError': 'サインインに失敗しました。もう一度お試しください。',
   'quickLog.title': 'クイック記録',
   'quickLog.set': 'セットを記録',
   'quickLog.meal': '食事を記録',

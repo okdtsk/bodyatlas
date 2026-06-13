@@ -42,8 +42,11 @@ export const authRoutes = new Hono<AppEnv>()
     const verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = base64UrlEncode(await sha256(verifier));
     const redirectUri = new URL('/auth/google/callback', c.req.url).toString();
+    // Native iOS shell flows (ASWebAuthenticationSession) are tagged so the
+    // callback hands the session back via a one-time code instead of a cookie.
+    const native = c.req.query('native') === '1';
 
-    setCookie(c, OAUTH_COOKIE, JSON.stringify({ state, verifier }), {
+    setCookie(c, OAUTH_COOKIE, JSON.stringify({ state, verifier, ...(native ? { native: true } : {}) }), {
       httpOnly: true,
       secure: isHttps(c.req.url),
       sameSite: 'Lax',
@@ -72,9 +75,9 @@ export const authRoutes = new Hono<AppEnv>()
       return c.json(badRequest('Missing OAuth parameters'), 400);
     }
 
-    let stored: { state: string; verifier: string };
+    let stored: { state: string; verifier: string; native?: boolean };
     try {
-      stored = JSON.parse(raw) as { state: string; verifier: string };
+      stored = JSON.parse(raw) as { state: string; verifier: string; native?: boolean };
     } catch {
       return c.json(badRequest('Malformed OAuth cookie'), 400);
     }
@@ -134,6 +137,17 @@ export const authRoutes = new Hono<AppEnv>()
     }
 
     const token = await createSession(c.env.SESSIONS, userId);
+
+    if (stored.native) {
+      // Native shell: the OAuth dance ran in ASWebAuthenticationSession, whose
+      // cookie jar is separate from the app's WKWebView. Hand the session back
+      // via a short-lived one-time code; the WebView redeems it at
+      // /auth/native/exchange to receive the session cookie in its own jar.
+      const code = crypto.randomUUID();
+      await c.env.SESSIONS.put(`native_auth:${code}`, token, { expirationTtl: 60 });
+      return c.redirect(`com.okdtsk.bodyatlas://auth?code=${code}`);
+    }
+
     setCookie(c, SESSION_COOKIE, token, {
       httpOnly: true,
       secure: isHttps(c.req.url),
@@ -143,6 +157,34 @@ export const authRoutes = new Hono<AppEnv>()
     });
     const homeUrl = new URL('/', c.req.url).toString();
     return c.redirect(homeUrl);
+  })
+  .post('/native/exchange', async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(badRequest('Malformed JSON body'), 400);
+    }
+    const code = (body as { code?: unknown }).code;
+    if (typeof code !== 'string' || code.length === 0) {
+      return c.json(badRequest('Missing code'), 400);
+    }
+
+    const token = await c.env.SESSIONS.get(`native_auth:${code}`);
+    if (!token) {
+      // Unknown and expired codes are deliberately indistinguishable.
+      return c.json(badRequest('Invalid code'), 400);
+    }
+    await c.env.SESSIONS.delete(`native_auth:${code}`);
+
+    setCookie(c, SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: isHttps(c.req.url),
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    });
+    return c.json({ ok: true });
   })
   .post('/logout', async (c) => {
     const token = getCookie(c, SESSION_COOKIE);

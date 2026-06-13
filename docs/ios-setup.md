@@ -38,16 +38,22 @@ site.
 ## Run
 
 1. Pick a destination (an iOS Simulator, or your device via cable/Wi-Fi) and press **Run**.
-2. First launch shows the live site; **sign in with Google** inside the WebView.
+2. First launch shows the live site; **sign in with Google** — inside the shell the Google
+   button opens a system browser sheet (see below).
 
-### Google OAuth caveat (known risk)
+### Google OAuth in the shell
 
-Google sometimes blocks OAuth inside embedded WebViews with a
-**`403 disallowed_useragent`** error. Capacitor's WKWebView usually passes, but if you hit
-that screen, report it — the planned fix is presenting the OAuth URL in
-`SFSafariViewController` instead (not built yet; flagged in the iOS shell plan). There is
-no workaround worth doing by hand: signing in via the separate Safari app does **not**
-share cookies with the shell's WKWebView.
+Google blocks OAuth inside embedded WebViews with a **`403 disallowed_useragent`** error,
+so the shell never runs the OAuth dance in the WKWebView. Instead, tapping the Google
+button calls the custom `NativeAuth` plugin, which presents the consent flow in
+`ASWebAuthenticationSession` (a policy-compliant system browser sheet that can reuse your
+Safari Google login). After consent, the Worker redirects to the app's callback scheme
+with a one-time code; the sheet closes automatically and the WebView exchanges the code
+at `/auth/native/exchange`, which sets the session cookie in the WebView's own cookie
+store and reloads into the signed-in app.
+
+Troubleshooting: **canceling the browser sheet** (the "Cancel" button or swiping it away)
+simply returns you to the login screen — tap the button again to retry.
 
 ## Apple Health import
 
