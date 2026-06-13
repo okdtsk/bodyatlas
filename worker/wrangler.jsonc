@@ -23,5 +23,11 @@
     }
   ],
   "kv_namespaces": [{ "binding": "SESSIONS", "id": "e25c68f7159e4ebaa11c04c3df74721f" }],
+  "ratelimits": [
+    { "name": "RL_API", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RL_AI", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } },
+    { "name": "RL_AUTH", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } },
+    { "name": "RL_MCP", "namespace_id": "1004", "simple": { "limit": 60, "period": 60 } }
+  ],
   "observability": { "enabled": true }
 }

@@ -16,12 +16,14 @@ import { accountRoutes } from './routes/account';
 import type { AppEnv, Bindings } from './types';
 import { BodyAtlasMCP } from './mcp/server';
 import { verifyToken } from './auth/tokens';
+import { rateLimit } from './lib/rate-limit';
 
 export { BodyAtlasMCP };
 
 export const apiApp = new Hono<AppEnv>()
   .get('/health', (c) => c.json({ ok: true }))
   .use(requireAuth)
+  .use(rateLimit((env) => (env as Bindings).RL_API, (c) => c.get('userId') ?? null))
   .route('/me', meRoutes)
   .route('/exercises', exercisesRoutes)
   .route('/templates', templatesRoutes)
@@ -31,6 +33,7 @@ export const apiApp = new Hono<AppEnv>()
   .route('/measurements', measurementsRoutes)
   .route('/trends', trendsRoutes)
   .route('/tokens', tokensRoutes)
+  .use('/ai/*', rateLimit((env) => (env as Bindings).RL_AI, (c) => c.get('userId') ?? null))
   .route('/ai', aiRoutes)
   .route('/account', accountRoutes);
 
@@ -49,6 +52,7 @@ app.onError((err, c) => {
 });
 
 app.route('/api', apiApp);
+app.use('/auth/*', rateLimit((env) => (env as Bindings).RL_AUTH, (c) => c.req.header('CF-Connecting-IP') ?? null));
 app.route('/auth', authRoutes);
 app.route('/auth', testLoginRoutes);
 
@@ -73,6 +77,16 @@ export default {
           { error: { code: 'unauthorized', message: 'Valid bearer token required' } },
           { status: 401 },
         );
+      }
+      const mcpLimiter = env.RL_MCP;
+      if (mcpLimiter) {
+        const { success } = await mcpLimiter.limit({ key: token });
+        if (!success) {
+          return Response.json(
+            { error: { code: 'rate_limited', message: 'Too many requests.' } },
+            { status: 429, headers: { 'Retry-After': '60' } },
+          );
+        }
       }
       (ctx as ExecutionContext & { props: { userId: string } }).props = { userId };
       return mcpHandler.fetch(request, env, ctx);
