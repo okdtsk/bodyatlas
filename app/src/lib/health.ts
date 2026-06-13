@@ -55,6 +55,9 @@ type CreatedMeal = InferResponseType<typeof api.meals.$post, 201>;
 export function useCreateMeal() {
   const qc = useQueryClient();
   return useMutation({
+    // 'always' so the mutationFn runs even when the browser is offline —
+    // otherwise TanStack Query pauses it and our offline fallback never enqueues.
+    networkMode: 'always',
     mutationFn: (input: MealInput) =>
       withOfflineFallback(
         () => expectOk<CreatedMeal>(api.meals.$post({ json: input })),
@@ -141,6 +144,7 @@ type CreatedSleep = InferResponseType<typeof api.sleep.$post, 201>;
 export function useCreateSleep() {
   const qc = useQueryClient();
   return useMutation({
+    networkMode: 'always',
     mutationFn: (input: SleepInput) =>
       withOfflineFallback(
         () => expectOk<CreatedSleep>(api.sleep.$post({ json: input })),
@@ -190,6 +194,7 @@ type CreatedMeasurement = InferResponseType<typeof api.measurements.$post, 201>;
 export function useCreateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
+    networkMode: 'always',
     mutationFn: (input: MeasurementInput) =>
       withOfflineFallback(
         () => expectOk<CreatedMeasurement>(api.measurements.$post({ json: input })),

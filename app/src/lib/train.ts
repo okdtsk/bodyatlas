@@ -229,6 +229,9 @@ export function useRemoveWorkoutExercise(workoutId: string) {
 export function useLogSet(workoutId: string, weId: string) {
   const qc = useQueryClient();
   return useMutation({
+    // 'always' so the mutationFn runs even when the browser is offline —
+    // otherwise TanStack Query pauses it and our offline fallback never enqueues.
+    networkMode: 'always',
     mutationFn: (input: SetInput) =>
       withOfflineFallbackSet(
         () =>
