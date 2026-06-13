@@ -3,14 +3,18 @@ import Capacitor
 
 /// App entry view controller (wired in Main.storyboard).
 ///
-/// App-target plugins are NOT auto-discovered: the bridge only reads the
-/// top-level `packageClassList` of the bundled capacitor.config.json, and the
-/// Capacitor CLI regenerates that key on every `cap sync` from npm plugin
-/// packages only (see @capacitor/cli util/iosplugin.js). Registering here via
-/// `capacitorDidLoad()` is the documented, sync-proof mechanism.
+/// App-target plugins are NOT auto-discovered: with `autoRegisterPlugins`
+/// (the default) the bridge registers only the classes in the bundled
+/// capacitor.config.json's top-level `packageClassList`, and the Capacitor CLI
+/// only ever fills that from npm plugin packages. Crucially, under
+/// `autoRegisterPlugins` `registerPluginType(_:)` is a no-op (it early-returns,
+/// see CapacitorBridge.registerPluginType) — so the type-based call silently
+/// registers nothing. `registerPluginInstance(_:)` is NOT gated: it registers
+/// the instance by its jsName and exports the JS proxy. That is the sync-proof,
+/// in-code mechanism for app-target plugins.
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
-        bridge?.registerPluginType(HealthSyncPlugin.self)
-        bridge?.registerPluginType(NativeAuthPlugin.self)
+        bridge?.registerPluginInstance(HealthSyncPlugin())
+        bridge?.registerPluginInstance(NativeAuthPlugin())
     }
 }

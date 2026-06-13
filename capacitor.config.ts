@@ -10,9 +10,13 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'automatic',
-    // Custom app-target plugins are NOT auto-discovered; they must be listed
-    // here so the bridge registers them (ObjC class name, not jsName).
-    packageClassList: ['HealthSyncPlugin'],
+    // NOTE: this nested ios.packageClassList is NOT what registers our custom
+    // app-target plugins. The bridge's auto-registration reads only the
+    // TOP-LEVEL packageClassList of the bundled capacitor.config.json, which
+    // the CLI fills from npm plugin packages only. Our plugins are registered
+    // in code via registerPluginInstance() in MainViewController.swift instead.
+    // Left here as documentation of intent.
+    packageClassList: ['HealthSyncPlugin', 'NativeAuthPlugin'],
   },
 };
 

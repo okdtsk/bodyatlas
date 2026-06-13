@@ -82,11 +82,13 @@ record. Out of scope for now; the shell is for personal device installs.
 
 ## Troubleshooting
 
-- **Plugin not found (`HealthSync` undefined in JS):** custom app-target plugins are not
-  auto-discovered in Capacitor 8 — registration happens in
+- **Plugin "not implemented on ios" / undefined in JS:** custom app-target plugins are not
+  auto-discovered in Capacitor 8. Registration happens in code in
   `ios/App/App/MainViewController.swift` (`capacitorDidLoad` →
-  `registerPluginType(HealthSyncPlugin.self)`). Confirm `Main.storyboard` still uses
-  `MainViewController` as the custom class.
+  `registerPluginInstance(...)`). Note: `registerPluginType(...)` is a silent no-op under
+  the default `autoRegisterPlugins`, so the instance-based call is required. Confirm
+  `Main.storyboard` still uses `MainViewController` as the custom class, and rebuild the
+  app in Xcode after any Swift change (a web refresh alone won't pick up native changes).
 - **Blank screen on launch:** the shell needs network (remote-URL mode); check the device
   is online and `https://bodyatlas.okdtsk.dev` is reachable.
 - **Headless build check** (no signing):
