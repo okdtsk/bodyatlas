@@ -1,3 +1,8 @@
+/** Minimal shape of a Cloudflare Workers rate-limit binding. */
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export type Bindings = {
   DB: D1Database;
   SESSIONS: KVNamespace;
@@ -6,6 +11,10 @@ export type Bindings = {
   GOOGLE_CLIENT_SECRET: string;
   AI_KEY_SECRET: string;
   E2E_TEST_LOGIN?: string;
+  RL_API?: RateLimiter;
+  RL_AI?: RateLimiter;
+  RL_AUTH?: RateLimiter;
+  RL_MCP?: RateLimiter;
 };
 
 export type AppEnv = {
