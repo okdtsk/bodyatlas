@@ -9,6 +9,17 @@ describe('mealInputSchema', () => {
     expect(mealInputSchema.safeParse({ name: 'x', calories: -10 }).success).toBe(false);
     expect(mealInputSchema.safeParse({ name: '  ' }).success).toBe(false);
   });
+  it('accepts a uuid clientId', () => {
+    const r = mealInputSchema.safeParse({ name: 'Eggs', clientId: '11111111-1111-1111-1111-111111111111' });
+    expect(r.success).toBe(true);
+  });
+  it('rejects a non-uuid clientId', () => {
+    const r = mealInputSchema.safeParse({ name: 'Eggs', clientId: 'not-a-uuid' });
+    expect(r.success).toBe(false);
+  });
+  it('still accepts no clientId', () => {
+    expect(mealInputSchema.safeParse({ name: 'Eggs' }).success).toBe(true);
+  });
 });
 
 describe('sleepInputSchema', () => {

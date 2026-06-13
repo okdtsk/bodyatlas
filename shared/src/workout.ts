@@ -35,6 +35,7 @@ export const setInputSchema = z
     durationSec: z.number().int().positive().max(86400).optional(),
     distanceM: z.number().positive().max(1000000).optional(),
     note: z.string().trim().min(1).max(200).optional(),
+    clientId: z.string().guid().optional(),
   })
   .refine((v) => v.reps !== undefined || v.durationSec !== undefined || v.distanceM !== undefined, {
     message: 'A set needs reps, duration, or distance',
