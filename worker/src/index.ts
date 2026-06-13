@@ -12,6 +12,7 @@ import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
 import { aiRoutes } from './routes/ai';
+import { accountRoutes } from './routes/account';
 import type { AppEnv, Bindings } from './types';
 import { BodyAtlasMCP } from './mcp/server';
 import { verifyToken } from './auth/tokens';
@@ -30,7 +31,8 @@ export const apiApp = new Hono<AppEnv>()
   .route('/measurements', measurementsRoutes)
   .route('/trends', trendsRoutes)
   .route('/tokens', tokensRoutes)
-  .route('/ai', aiRoutes);
+  .route('/ai', aiRoutes)
+  .route('/account', accountRoutes);
 
 const app = new Hono<AppEnv>();
 
