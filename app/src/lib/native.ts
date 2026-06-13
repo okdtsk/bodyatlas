@@ -7,6 +7,7 @@
  * source of truth for the web side of that contract.
  */
 
+import { registerPlugin } from '@capacitor/core';
 import { localDayKey } from './buckets';
 
 // ---------- bridge detection ----------
@@ -18,6 +19,29 @@ export function isNativeShell(): boolean {
     !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
   );
 }
+
+// ---------- plugin proxies ----------
+//
+// App-target plugins are registered natively in MainViewController via
+// `bridge.registerPluginType(...)`, which populates the native routing table.
+// In remote-URL mode, though, Capacitor does NOT auto-create the JS-side
+// `window.Capacitor.Plugins.<name>` proxy — so reaching into that object finds
+// nothing. `registerPlugin` builds the proxy explicitly; each method call
+// dispatches to native by plugin name through the bridge, independent of any
+// header injection. On web (non-native) the proxy is inert until a method is
+// called, and every call below is gated by isNativeShell().
+
+interface HealthSyncPlugin {
+  requestAuthorization(): Promise<{ granted: boolean }>;
+  querySamples(options: { days: number }): Promise<HealthSyncSamples>;
+}
+
+interface NativeAuthPlugin {
+  signIn(): Promise<{ code: string }>;
+}
+
+const HealthSync = registerPlugin<HealthSyncPlugin>('HealthSync');
+const NativeAuth = registerPlugin<NativeAuthPlugin>('NativeAuth');
 
 // ---------- typed bridge interfaces ----------
 
@@ -51,13 +75,8 @@ export interface HealthSyncSamples {
 
 /** Request HealthKit authorization. Resolves once the system prompt completes. */
 export async function healthRequestAuth(): Promise<{ granted: boolean }> {
-  const bridge = (
-    window as {
-      Capacitor?: { Plugins?: { HealthSync?: { requestAuthorization: () => Promise<{ granted: boolean }> } } };
-    }
-  ).Capacitor?.Plugins?.HealthSync;
-  if (!bridge) throw new Error('HealthSync plugin not available');
-  return bridge.requestAuthorization();
+  if (!isNativeShell()) throw new Error('HealthSync plugin not available');
+  return HealthSync.requestAuthorization();
 }
 
 /**
@@ -66,28 +85,14 @@ export async function healthRequestAuth(): Promise<{ granted: boolean }> {
  * Rejects with "canceled" when the user dismisses the browser sheet.
  */
 export async function nativeGoogleSignIn(): Promise<{ code: string }> {
-  const bridge = (
-    window as {
-      Capacitor?: { Plugins?: { NativeAuth?: { signIn: () => Promise<{ code: string }> } } };
-    }
-  ).Capacitor?.Plugins?.NativeAuth;
-  if (!bridge) throw new Error('NativeAuth plugin not available');
-  return bridge.signIn();
+  if (!isNativeShell()) throw new Error('NativeAuth plugin not available');
+  return NativeAuth.signIn();
 }
 
 /** Query Apple Health samples for the past `days` days (1-90, default 30). */
 export async function healthQuerySamples(days = 30): Promise<HealthSyncSamples> {
-  const bridge = (
-    window as {
-      Capacitor?: {
-        Plugins?: {
-          HealthSync?: { querySamples: (opts: { days: number }) => Promise<HealthSyncSamples> };
-        };
-      };
-    }
-  ).Capacitor?.Plugins?.HealthSync;
-  if (!bridge) throw new Error('HealthSync plugin not available');
-  return bridge.querySamples({ days });
+  if (!isNativeShell()) throw new Error('HealthSync plugin not available');
+  return HealthSync.querySamples({ days });
 }
 
 // ---------- pure helpers (TDD-covered) ----------
