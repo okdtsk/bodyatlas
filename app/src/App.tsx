@@ -5,6 +5,7 @@ import { useMe } from './lib/useMe';
 import { ExerciseHistoryPage } from './pages/ExerciseHistoryPage';
 import { ExercisesPage } from './pages/ExercisesPage';
 import { HealthPage } from './pages/HealthPage';
+import { OnboardingWizard } from './components/OnboardingWizard';
 import { LoginPage } from './pages/LoginPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { SessionPage } from './pages/SessionPage';
@@ -41,6 +42,8 @@ export function App() {
               <Route path="*" element={<Loading />} />
             ) : me == null ? (
               <Route path="*" element={<LoginPage />} />
+            ) : me.onboardedAt == null ? (
+              <Route path="*" element={<OnboardingWizard me={me} />} />
             ) : (
               <Route element={<AppLayout />}>
                 <Route index element={<TodayPage />} />
