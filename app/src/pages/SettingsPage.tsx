@@ -17,6 +17,7 @@ import {
 } from '../lib/native';
 import { localDayKey } from '../lib/buckets';
 import { addDays } from '../lib/format';
+import { downloadExport } from '../lib/account';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -63,6 +64,9 @@ export function SettingsPage() {
   const [ahError, setAhError] = useState(false);
   const createSleep = useCreateSleep();
   const createMeasurement = useCreateMeasurement();
+
+  // Account export state
+  const [exportError, setExportError] = useState(false);
 
   function getDefaultModel(provider: AiProvider | ''): string {
     if (provider === 'claude') return 'claude-opus-4-8';
@@ -647,6 +651,34 @@ export function SettingsPage() {
           )}
         </section>
       )}
+
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: '1rem', marginBottom: 12 }}>{t('account.section')}</h2>
+        <button
+          type="button"
+          onClick={async () => {
+            setExportError(false);
+            try {
+              await downloadExport();
+            } catch {
+              setExportError(true);
+            }
+          }}
+          style={{
+            padding: '10px 16px',
+            background: 'var(--surface-2)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            cursor: 'pointer',
+          }}
+        >
+          {t('account.export')}
+        </button>
+        {exportError && (
+          <p style={{ color: 'var(--negative)' }}>{t('account.exportError')}</p>
+        )}
+      </section>
 
       <form method="post" action="/auth/logout">
         <button

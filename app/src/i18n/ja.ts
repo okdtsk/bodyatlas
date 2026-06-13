@@ -202,4 +202,7 @@ export const ja: Record<MessageKey, string> = {
   'offline.pending': '同期待ち',
   'offline.failed': '同期に失敗',
   'offline.pendingCount': '{n}件の同期待ち',
+  'account.section': 'アカウント',
+  'account.export': 'データをエクスポート',
+  'account.exportError': 'エクスポートに失敗しました。',
 };

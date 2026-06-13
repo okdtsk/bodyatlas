@@ -200,6 +200,9 @@ export const en = {
   'offline.pending': 'Pending sync',
   'offline.failed': 'Sync failed',
   'offline.pendingCount': '{n} waiting to sync',
+  'account.section': 'Account',
+  'account.export': 'Export my data',
+  'account.exportError': 'Export failed. Please try again.',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;
