@@ -15,6 +15,7 @@ export const users = sqliteTable('users', {
   targetProteinG: integer('target_protein_g'),
   targetFatG: integer('target_fat_g'),
   targetCarbsG: integer('target_carbs_g'),
+  onboardedAt: integer('onboarded_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),

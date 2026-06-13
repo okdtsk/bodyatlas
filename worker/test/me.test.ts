@@ -103,4 +103,31 @@ describe('/api/me', () => {
     const me = (await res.json()) as { targetKcal: number | null };
     expect(me.targetKcal).toBeNull();
   });
+
+  it('PATCH onboarded:true stamps onboardedAt server-side', async () => {
+    await seedUser('user-ob');
+    const before = await SELF.fetch('https://example.com/api/me', { headers: { Cookie: await sessionCookieFor('user-ob') } });
+    expect((await before.json() as any).onboardedAt).toBeNull();
+
+    const res = await SELF.fetch('https://example.com/api/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: await sessionCookieFor('user-ob') },
+      body: JSON.stringify({ onboarded: true }),
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json() as any).onboardedAt).not.toBeNull();
+  });
+
+  it('PATCH rejects a client-supplied onboardedAt timestamp', async () => {
+    await seedUser('user-ob2');
+    const res = await SELF.fetch('https://example.com/api/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Cookie: await sessionCookieFor('user-ob2') },
+      body: JSON.stringify({ onboardedAt: '2000-01-01T00:00:00Z' }),
+    });
+    // onboardedAt is not an accepted field; updateMeSchema strips unknown keys (zod default),
+    // so this is a no-op patch that leaves onboardedAt null. Accept 200 with onboardedAt still null.
+    expect(res.status).toBe(200);
+    expect((await res.json() as any).onboardedAt).toBeNull();
+  });
 });

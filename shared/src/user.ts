@@ -29,7 +29,9 @@ export const userPrefsSchema = z.object({
   targetCarbsG: z.number().int().positive().nullable(),
 });
 
-export const updateMeSchema = userPrefsSchema.partial();
+export const updateMeSchema = userPrefsSchema.partial().extend({
+  onboarded: z.boolean().optional(),
+});
 
 export type UserPrefs = z.infer<typeof userPrefsSchema>;
 export type UpdateMe = z.infer<typeof updateMeSchema>;
