@@ -229,7 +229,9 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       if (!we) return c.json(notFound, 404);
       const input = c.req.valid('json');
       if (input.clientId) {
-        const dup = await db.query.sets.findFirst({ where: eq(schema.sets.clientId, input.clientId) });
+        const dup = await db.query.sets.findFirst({
+          where: and(eq(schema.sets.workoutExerciseId, we.id), eq(schema.sets.clientId, input.clientId)),
+        });
         if (dup) return c.json(dup, 200);
       }
       const last = await db
@@ -250,8 +252,16 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
         distanceM: input.distanceM ?? null,
         note: input.note ?? null,
       };
-      await db.insert(schema.sets).values(set).onConflictDoNothing({ target: schema.sets.clientId });
-      return c.json(set, 201);
+      await db
+        .insert(schema.sets)
+        .values(set)
+        .onConflictDoNothing({ target: [schema.sets.workoutExerciseId, schema.sets.clientId] });
+      const created = input.clientId
+        ? await db.query.sets.findFirst({
+            where: and(eq(schema.sets.workoutExerciseId, we.id), eq(schema.sets.clientId, input.clientId)),
+          })
+        : set;
+      return c.json(created ?? set, 201);
     },
   )
   .patch(

@@ -93,7 +93,7 @@ export const mealsRoutes = new Hono<ProtectedEnv>()
     await db
       .insert(schema.meals)
       .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
-      .onConflictDoNothing({ target: schema.meals.clientId });
+      .onConflictDoNothing({ target: [schema.meals.userId, schema.meals.clientId] });
     const created = await db.query.meals.findFirst({
       where: input.clientId
         ? and(eq(schema.meals.userId, c.get('userId')), eq(schema.meals.clientId, input.clientId))

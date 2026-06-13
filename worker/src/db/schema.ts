@@ -120,7 +120,7 @@ export const sets = sqliteTable(
   },
   (t) => [
     index('idx_sets_workout_exercise').on(t.workoutExerciseId),
-    uniqueIndex('idx_sets_client_id').on(t.clientId),
+    uniqueIndex('idx_sets_client_id').on(t.workoutExerciseId, t.clientId),
   ],
 );
 
@@ -145,7 +145,7 @@ export const meals = sqliteTable(
   },
   (t) => [
     index('idx_meals_user_eaten').on(t.userId, t.eatenAt),
-    uniqueIndex('idx_meals_client_id').on(t.clientId),
+    uniqueIndex('idx_meals_client_id').on(t.userId, t.clientId),
   ],
 );
 
@@ -164,7 +164,7 @@ export const sleepRecords = sqliteTable(
   },
   (t) => [
     index('idx_sleep_user_woke').on(t.userId, t.wokeAt),
-    uniqueIndex('idx_sleep_client_id').on(t.clientId),
+    uniqueIndex('idx_sleep_client_id').on(t.userId, t.clientId),
   ],
 );
 
@@ -184,7 +184,7 @@ export const bodyMeasurements = sqliteTable(
   },
   (t) => [
     index('idx_measurements_user_measured').on(t.userId, t.measuredAt),
-    uniqueIndex('idx_measurements_client_id').on(t.clientId),
+    uniqueIndex('idx_measurements_client_id').on(t.userId, t.clientId),
   ],
 );
 

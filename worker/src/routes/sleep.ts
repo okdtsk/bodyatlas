@@ -61,7 +61,7 @@ export const sleepRoutes = new Hono<ProtectedEnv>()
     await db
       .insert(schema.sleepRecords)
       .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
-      .onConflictDoNothing({ target: schema.sleepRecords.clientId });
+      .onConflictDoNothing({ target: [schema.sleepRecords.userId, schema.sleepRecords.clientId] });
     const created = await db.query.sleepRecords.findFirst({
       where: input.clientId
         ? and(

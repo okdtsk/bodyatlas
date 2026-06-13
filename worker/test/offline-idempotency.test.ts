@@ -98,4 +98,42 @@ describe('offline idempotency by clientId', () => {
     const dup = (await second.json()) as { id: string };
     expect(dup.id).toBe(created.id);
   });
+
+  it('sets: same clientId across DIFFERENT workout-exercises does NOT dedup (composite scope)', async () => {
+    const headers = await authed();
+    const clientId = '66666666-6666-6666-6666-666666666666';
+
+    const workout = (await (
+      await SELF.fetch('https://example.com/api/workouts', json(headers, {}))
+    ).json()) as { id: string };
+    const we1 = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${workout.id}/exercises`,
+        json(headers, { exerciseId: 'seed-barbell-bench-press' }),
+      )
+    ).json()) as { id: string };
+    const we2 = (await (
+      await SELF.fetch(
+        `https://example.com/api/workouts/${workout.id}/exercises`,
+        json(headers, { exerciseId: 'seed-overhead-press' }),
+      )
+    ).json()) as { id: string };
+
+    const body = { reps: 5, clientId };
+    const r1 = await SELF.fetch(
+      `https://example.com/api/workouts/${workout.id}/exercises/${we1.id}/sets`,
+      json(headers, body),
+    );
+    expect(r1.status).toBe(201);
+    const s1 = (await r1.json()) as { id: string };
+
+    const r2 = await SELF.fetch(
+      `https://example.com/api/workouts/${workout.id}/exercises/${we2.id}/sets`,
+      json(headers, body),
+    );
+    expect(r2.status).toBe(201);
+    const s2 = (await r2.json()) as { id: string };
+
+    expect(s2.id).not.toBe(s1.id);
+  });
 });

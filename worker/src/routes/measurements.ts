@@ -61,7 +61,7 @@ export const measurementsRoutes = new Hono<ProtectedEnv>()
     await db
       .insert(schema.bodyMeasurements)
       .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
-      .onConflictDoNothing({ target: schema.bodyMeasurements.clientId });
+      .onConflictDoNothing({ target: [schema.bodyMeasurements.userId, schema.bodyMeasurements.clientId] });
     const created = await db.query.bodyMeasurements.findFirst({
       where: input.clientId
         ? and(
