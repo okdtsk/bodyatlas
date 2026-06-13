@@ -38,6 +38,11 @@ describe('robots.txt route (hidden default)', () => {
     const res = await SELF.fetch('https://example.com/robots.txt');
     expect(res.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
   });
+
+  it('is served no-store so a visibility flip takes effect immediately', async () => {
+    const res = await SELF.fetch('https://example.com/robots.txt');
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+  });
 });
 
 describe('X-Robots-Tag on worker routes (hidden default)', () => {

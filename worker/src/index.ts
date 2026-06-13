@@ -52,6 +52,8 @@ app.use('*', async (c, next) => {
 app.get('/robots.txt', (c) =>
   c.text(robotsTxt(isPublicSite(c.env)), 200, {
     'Content-Type': 'text/plain; charset=utf-8',
+    // Never cache: flipping PUBLIC_SITE must take effect on the next request.
+    'Cache-Control': 'no-store',
   }),
 );
 
