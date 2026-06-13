@@ -101,6 +101,17 @@ export function HealthPage() {
 
   const closeSheet = () => setOpenSheet(null);
 
+  const anyLoading =
+    mealsQuery.isPending || sleepQuery.isPending || measurementsQuery.isPending;
+  const isEmpty =
+    !anyLoading &&
+    meals.length === 0 &&
+    pendingMeals.length === 0 &&
+    sleepRecords.length === 0 &&
+    pendingSleep.length === 0 &&
+    measurements.length === 0 &&
+    pendingMeasurements.length === 0;
+
   return (
     <section>
       {/* Day navigation header */}
@@ -162,6 +173,10 @@ export function HealthPage() {
           targetCarbsG={me?.targetCarbsG}
         />
       </div>
+
+      {isEmpty && (
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.health')}</p>
+      )}
 
       {/* Meals section */}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>

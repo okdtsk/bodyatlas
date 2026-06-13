@@ -149,6 +149,15 @@ export function TrendsPage() {
   const avgSleepLabel = avgSleepMins !== null ? `${Math.floor(avgSleepMins / 60)}h ${avgSleepMins % 60}m` : null;
   const maxSleepMins = sleepDurationsMinutes.length > 0 ? Math.max(...sleepDurationsMinutes.map((r) => r.mins)) : 1;
 
+  const anyLoading =
+    volumeData.isPending || nutritionBodyData.isPending || sleepData.isPending;
+  const isEmpty =
+    !anyLoading &&
+    volumeBuckets.length === 0 &&
+    nutritionBodySeries.kcalSeries.length === 0 &&
+    nutritionBodySeries.weightSeries.length === 0 &&
+    sleepRecords.length === 0;
+
   return (
     <section style={{ padding: '16px 16px 80px' }}>
       {/* Coach card */}
@@ -195,6 +204,10 @@ export function TrendsPage() {
           </button>
         ))}
       </div>
+
+      {isEmpty && (
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.trends')}</p>
+      )}
 
       {/* Strength section */}
       <div className="glow-card" style={{ marginBottom: 20 }}>
