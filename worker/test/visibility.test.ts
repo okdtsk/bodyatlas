@@ -1,3 +1,4 @@
+import { SELF } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { isPublicSite, robotsTxt } from '../src/lib/visibility';
 
@@ -21,5 +22,27 @@ describe('robotsTxt', () => {
 
   it('allows all crawling when public', () => {
     expect(robotsTxt(true)).toBe('User-agent: *\nAllow: /\n');
+  });
+});
+
+// In the test env PUBLIC_SITE comes from wrangler.jsonc vars = "false" (hidden).
+describe('robots.txt route (hidden default)', () => {
+  it('serves Disallow: / as text/plain', async () => {
+    const res = await SELF.fetch('https://example.com/robots.txt');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toContain('text/plain');
+    expect(await res.text()).toBe('User-agent: *\nDisallow: /\n');
+  });
+
+  it('carries the X-Robots-Tag noindex header', async () => {
+    const res = await SELF.fetch('https://example.com/robots.txt');
+    expect(res.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
+  });
+});
+
+describe('X-Robots-Tag on worker routes (hidden default)', () => {
+  it('adds noindex to API responses', async () => {
+    const res = await SELF.fetch('https://example.com/api/health');
+    expect(res.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
   });
 });
