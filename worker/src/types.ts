@@ -11,6 +11,7 @@ export type Bindings = {
   GOOGLE_CLIENT_SECRET: string;
   AI_KEY_SECRET: string;
   E2E_TEST_LOGIN?: string;
+  PUBLIC_SITE?: string;
   RL_API?: RateLimiter;
   RL_AI?: RateLimiter;
   RL_AUTH?: RateLimiter;
