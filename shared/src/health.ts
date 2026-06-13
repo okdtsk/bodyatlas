@@ -9,6 +9,7 @@ export const mealInputSchema = z.object({
   fatG: z.number().min(0).max(1000).optional(),
   carbsG: z.number().min(0).max(1000).optional(),
   notes: z.string().trim().max(500).optional(),
+  clientId: z.string().guid().optional(),
 });
 
 export const mealFavoriteSchema = z.object({ isFavorite: z.boolean() });
@@ -19,6 +20,7 @@ export const sleepInputSchema = z
     wokeAt: isoDateString,
     quality: z.number().int().min(1).max(5).optional(),
     notes: z.string().trim().max(500).optional(),
+    clientId: z.string().guid().optional(),
   })
   .refine((v) => new Date(v.wokeAt) > new Date(v.bedAt), { message: 'wokeAt must be after bedAt' })
   .refine(
@@ -31,6 +33,7 @@ export const measurementInputSchema = z
     measuredAt: isoDateString.optional(),
     weightKg: z.number().positive().max(500).optional(),
     bodyFatPct: z.number().min(1).max(75).optional(),
+    clientId: z.string().guid().optional(),
   })
   .refine((v) => v.weightKg !== undefined || v.bodyFatPct !== undefined, {
     message: 'Provide weight or body fat',

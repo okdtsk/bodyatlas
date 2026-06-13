@@ -82,9 +82,23 @@ export const mealsRoutes = new Hono<ProtectedEnv>()
   })
   .post('/', validateMeal, async (c) => {
     const db = getDb(c.env.DB);
+    const input = c.req.valid('json');
+    if (input.clientId) {
+      const dup = await db.query.meals.findFirst({
+        where: and(eq(schema.meals.userId, c.get('userId')), eq(schema.meals.clientId, input.clientId)),
+      });
+      if (dup) return c.json(dup, 200);
+    }
     const id = crypto.randomUUID();
-    await db.insert(schema.meals).values({ id, userId: c.get('userId'), ...toRow(c.req.valid('json')) });
-    const created = await db.query.meals.findFirst({ where: eq(schema.meals.id, id) });
+    await db
+      .insert(schema.meals)
+      .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
+      .onConflictDoNothing({ target: [schema.meals.userId, schema.meals.clientId] });
+    const created = await db.query.meals.findFirst({
+      where: input.clientId
+        ? and(eq(schema.meals.userId, c.get('userId')), eq(schema.meals.clientId, input.clientId))
+        : eq(schema.meals.id, id),
+    });
     return c.json(created, 201);
   })
   .put('/:id', validateMeal, async (c) => {

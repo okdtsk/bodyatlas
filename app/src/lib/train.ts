@@ -2,6 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
 import type { CreateExercise, SetInput, TemplateInput } from '@bodyatlas/shared';
 import { api, expectOk } from './api';
+import { offlineQueue } from './offline';
+import { isOfflineError } from './offline/connectivity';
+import type { SetContext } from './offline/types';
+
+async function withOfflineFallbackSet<T>(
+  online: () => Promise<T>,
+  payload: Record<string, unknown>,
+  context: SetContext,
+): Promise<T | { queued: true; id: string }> {
+  try {
+    return await online();
+  } catch (err) {
+    if (!isOfflineError(err)) throw err;
+    const op = await offlineQueue.enqueue('set', payload, context);
+    return { queued: true, id: op.id };
+  }
+}
 
 // ---------- exercises ----------
 
@@ -212,12 +229,20 @@ export function useRemoveWorkoutExercise(workoutId: string) {
 export function useLogSet(workoutId: string, weId: string) {
   const qc = useQueryClient();
   return useMutation({
+    // 'always' so the mutationFn runs even when the browser is offline —
+    // otherwise TanStack Query pauses it and our offline fallback never enqueues.
+    networkMode: 'always',
     mutationFn: (input: SetInput) =>
-      expectOk(
-        api.workouts[':id'].exercises[':weId'].sets.$post({
-          param: { id: workoutId, weId },
-          json: input,
-        }),
+      withOfflineFallbackSet(
+        () =>
+          expectOk(
+            api.workouts[':id'].exercises[':weId'].sets.$post({
+              param: { id: workoutId, weId },
+              json: input,
+            }),
+          ),
+        input as Record<string, unknown>,
+        { workoutId, weId },
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workouts'] }),
   });

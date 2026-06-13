@@ -2,6 +2,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
 import type { MealInput, MeasurementInput, SleepInput } from '@bodyatlas/shared';
 import { api, expectOk } from './api';
+import { offlineQueue } from './offline';
+import { isOfflineError } from './offline/connectivity';
+import type { OpKind } from './offline';
+
+/** Run an online mutation; on an offline error, enqueue and resolve as queued. */
+async function withOfflineFallback<T>(
+  online: () => Promise<T>,
+  kind: OpKind,
+  payload: Record<string, unknown>,
+): Promise<T | { queued: true; id: string }> {
+  try {
+    return await online();
+  } catch (err) {
+    if (!isOfflineError(err)) throw err;
+    const op = await offlineQueue.enqueue(kind, payload);
+    return { queued: true, id: op.id };
+  }
+}
 
 // ---------- meals ----------
 
@@ -37,8 +55,15 @@ type CreatedMeal = InferResponseType<typeof api.meals.$post, 201>;
 export function useCreateMeal() {
   const qc = useQueryClient();
   return useMutation({
+    // 'always' so the mutationFn runs even when the browser is offline —
+    // otherwise TanStack Query pauses it and our offline fallback never enqueues.
+    networkMode: 'always',
     mutationFn: (input: MealInput) =>
-      expectOk<CreatedMeal>(api.meals.$post({ json: input })),
+      withOfflineFallback(
+        () => expectOk<CreatedMeal>(api.meals.$post({ json: input })),
+        'meal',
+        input as Record<string, unknown>,
+      ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['meals'] });
       void qc.invalidateQueries({ queryKey: ['meal-search'] });
@@ -119,8 +144,13 @@ type CreatedSleep = InferResponseType<typeof api.sleep.$post, 201>;
 export function useCreateSleep() {
   const qc = useQueryClient();
   return useMutation({
+    networkMode: 'always',
     mutationFn: (input: SleepInput) =>
-      expectOk<CreatedSleep>(api.sleep.$post({ json: input })),
+      withOfflineFallback(
+        () => expectOk<CreatedSleep>(api.sleep.$post({ json: input })),
+        'sleep',
+        input as Record<string, unknown>,
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sleep'] }),
   });
 }
@@ -164,8 +194,13 @@ type CreatedMeasurement = InferResponseType<typeof api.measurements.$post, 201>;
 export function useCreateMeasurement() {
   const qc = useQueryClient();
   return useMutation({
+    networkMode: 'always',
     mutationFn: (input: MeasurementInput) =>
-      expectOk<CreatedMeasurement>(api.measurements.$post({ json: input })),
+      withOfflineFallback(
+        () => expectOk<CreatedMeasurement>(api.measurements.$post({ json: input })),
+        'measurement',
+        input as Record<string, unknown>,
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['measurements'] }),
   });
 }

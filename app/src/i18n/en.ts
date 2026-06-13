@@ -196,6 +196,10 @@ export const en = {
   'native.syncResult': 'Imported {sleep} sleep records and {weight} measurements.',
   'native.syncPartial': '{failed} records failed to import.',
   'native.syncError': 'Import failed.',
+  'offline.offline': 'Offline',
+  'offline.pending': 'Pending sync',
+  'offline.failed': 'Sync failed',
+  'offline.pendingCount': '{n} waiting to sync',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

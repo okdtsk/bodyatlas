@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import type { AiProvider, Equipment, ExerciseType, Locale, MuscleGroup, Theme, Unit } from '@bodyatlas/shared';
 
 export const users = sqliteTable('users', {
@@ -116,8 +116,12 @@ export const sets = sqliteTable(
     durationSec: integer('duration_sec'),
     distanceM: real('distance_m'),
     note: text('note'),
+    clientId: text('client_id'),
   },
-  (t) => [index('idx_sets_workout_exercise').on(t.workoutExerciseId)],
+  (t) => [
+    index('idx_sets_workout_exercise').on(t.workoutExerciseId),
+    uniqueIndex('idx_sets_client_id').on(t.workoutExerciseId, t.clientId),
+  ],
 );
 
 export const meals = sqliteTable(
@@ -137,8 +141,12 @@ export const meals = sqliteTable(
     carbsG: real('carbs_g'),
     notes: text('notes'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    clientId: text('client_id'),
   },
-  (t) => [index('idx_meals_user_eaten').on(t.userId, t.eatenAt)],
+  (t) => [
+    index('idx_meals_user_eaten').on(t.userId, t.eatenAt),
+    uniqueIndex('idx_meals_client_id').on(t.userId, t.clientId),
+  ],
 );
 
 export const sleepRecords = sqliteTable(
@@ -152,8 +160,12 @@ export const sleepRecords = sqliteTable(
     wokeAt: integer('woke_at', { mode: 'timestamp' }).notNull(),
     quality: integer('quality'),
     notes: text('notes'),
+    clientId: text('client_id'),
   },
-  (t) => [index('idx_sleep_user_woke').on(t.userId, t.wokeAt)],
+  (t) => [
+    index('idx_sleep_user_woke').on(t.userId, t.wokeAt),
+    uniqueIndex('idx_sleep_client_id').on(t.userId, t.clientId),
+  ],
 );
 
 export const bodyMeasurements = sqliteTable(
@@ -168,8 +180,12 @@ export const bodyMeasurements = sqliteTable(
       .$defaultFn(() => new Date()),
     weightKg: real('weight_kg'),
     bodyFatPct: real('body_fat_pct'),
+    clientId: text('client_id'),
   },
-  (t) => [index('idx_measurements_user_measured').on(t.userId, t.measuredAt)],
+  (t) => [
+    index('idx_measurements_user_measured').on(t.userId, t.measuredAt),
+    uniqueIndex('idx_measurements_client_id').on(t.userId, t.clientId),
+  ],
 );
 
 export const apiTokens = sqliteTable(

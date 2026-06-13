@@ -47,9 +47,30 @@ export const sleepRoutes = new Hono<ProtectedEnv>()
   })
   .post('/', validate, async (c) => {
     const db = getDb(c.env.DB);
+    const input = c.req.valid('json');
+    if (input.clientId) {
+      const dup = await db.query.sleepRecords.findFirst({
+        where: and(
+          eq(schema.sleepRecords.userId, c.get('userId')),
+          eq(schema.sleepRecords.clientId, input.clientId),
+        ),
+      });
+      if (dup) return c.json(dup, 200);
+    }
     const id = crypto.randomUUID();
-    await db.insert(schema.sleepRecords).values({ id, userId: c.get('userId'), ...toRow(c.req.valid('json')) });
-    return c.json(await db.query.sleepRecords.findFirst({ where: eq(schema.sleepRecords.id, id) }), 201);
+    await db
+      .insert(schema.sleepRecords)
+      .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
+      .onConflictDoNothing({ target: [schema.sleepRecords.userId, schema.sleepRecords.clientId] });
+    const created = await db.query.sleepRecords.findFirst({
+      where: input.clientId
+        ? and(
+            eq(schema.sleepRecords.userId, c.get('userId')),
+            eq(schema.sleepRecords.clientId, input.clientId),
+          )
+        : eq(schema.sleepRecords.id, id),
+    });
+    return c.json(created, 201);
   })
   .put('/:id', validate, async (c) => {
     const db = getDb(c.env.DB);

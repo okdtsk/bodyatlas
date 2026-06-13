@@ -47,9 +47,30 @@ export const measurementsRoutes = new Hono<ProtectedEnv>()
   })
   .post('/', validate, async (c) => {
     const db = getDb(c.env.DB);
+    const input = c.req.valid('json');
+    if (input.clientId) {
+      const dup = await db.query.bodyMeasurements.findFirst({
+        where: and(
+          eq(schema.bodyMeasurements.userId, c.get('userId')),
+          eq(schema.bodyMeasurements.clientId, input.clientId),
+        ),
+      });
+      if (dup) return c.json(dup, 200);
+    }
     const id = crypto.randomUUID();
-    await db.insert(schema.bodyMeasurements).values({ id, userId: c.get('userId'), ...toRow(c.req.valid('json')) });
-    return c.json(await db.query.bodyMeasurements.findFirst({ where: eq(schema.bodyMeasurements.id, id) }), 201);
+    await db
+      .insert(schema.bodyMeasurements)
+      .values({ id, userId: c.get('userId'), clientId: input.clientId ?? null, ...toRow(input) })
+      .onConflictDoNothing({ target: [schema.bodyMeasurements.userId, schema.bodyMeasurements.clientId] });
+    const created = await db.query.bodyMeasurements.findFirst({
+      where: input.clientId
+        ? and(
+            eq(schema.bodyMeasurements.userId, c.get('userId')),
+            eq(schema.bodyMeasurements.clientId, input.clientId),
+          )
+        : eq(schema.bodyMeasurements.id, id),
+    });
+    return c.json(created, 201);
   })
   .put('/:id', validate, async (c) => {
     const db = getDb(c.env.DB);

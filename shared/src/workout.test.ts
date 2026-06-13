@@ -20,6 +20,10 @@ describe('setInputSchema', () => {
   it('rejects rpe off the 0.5 grid', () => {
     expect(setInputSchema.safeParse({ reps: 8, rpe: 8.3 }).success).toBe(false);
   });
+  it('accepts a uuid clientId', () => {
+    const r = setInputSchema.safeParse({ reps: 5, clientId: '11111111-1111-1111-1111-111111111111' });
+    expect(r.success).toBe(true);
+  });
 });
 
 describe('createWorkoutSchema', () => {
