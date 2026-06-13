@@ -15,11 +15,11 @@ const signInStyle: CSSProperties = {
 export function LoginPage() {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleNativeSignIn = async () => {
     setBusy(true);
-    setFailed(false);
+    setError(null);
     try {
       const { code } = await nativeGoogleSignIn();
       const res = await fetch('/auth/native/exchange', {
@@ -32,10 +32,15 @@ export function LoginPage() {
         window.location.reload();
         return;
       }
-      setFailed(true);
-    } catch {
-      // Plugin rejection (e.g. the user canceled the browser sheet):
-      // silently return to the idle login screen.
+      setError(`${t('login.nativeError')} (exchange ${res.status})`);
+    } catch (err) {
+      // The plugin rejects with "canceled" when the user dismisses the
+      // browser sheet — return to the idle screen silently. Anything else
+      // is a real failure and must be shown, not swallowed.
+      const message = err instanceof Error ? err.message : String(err);
+      if (message !== 'canceled') {
+        setError(`${t('login.nativeError')} (${message})`);
+      }
     } finally {
       setBusy(false);
     }
@@ -77,7 +82,7 @@ export function LoginPage() {
           {t('login.signIn')}
         </a>
       )}
-      {failed && <p style={{ color: 'var(--negative)' }}>{t('login.nativeError')}</p>}
+      {error && <p style={{ color: 'var(--negative)', maxWidth: 320 }}>{error}</p>}
     </main>
   );
 }

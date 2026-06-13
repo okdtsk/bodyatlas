@@ -59,9 +59,14 @@ public class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthenticationP
         session.prefersEphemeralWebBrowserSession = false
         authSession = session
 
-        // start() must run on the main thread (it presents UI).
-        DispatchQueue.main.async {
-            session.start()
+        // start() must run on the main thread (it presents UI). It returns
+        // false when the session cannot be presented at all — without this
+        // check the completion handler never fires and the call hangs.
+        DispatchQueue.main.async { [weak self] in
+            if !session.start() {
+                self?.authSession = nil
+                call.reject("Could not present the sign-in sheet")
+            }
         }
     }
 
