@@ -17,6 +17,7 @@ import type { AppEnv, Bindings } from './types';
 import { BodyAtlasMCP } from './mcp/server';
 import { verifyToken } from './auth/tokens';
 import { rateLimit } from './lib/rate-limit';
+import { isPublicSite, robotsTxt } from './lib/visibility';
 
 export { BodyAtlasMCP };
 
@@ -38,6 +39,23 @@ export const apiApp = new Hono<AppEnv>()
   .route('/account', accountRoutes);
 
 const app = new Hono<AppEnv>();
+
+// Add noindex to all worker-produced responses while the site is hidden.
+app.use('*', async (c, next) => {
+  await next();
+  if (!isPublicSite(c.env)) {
+    c.header('X-Robots-Tag', 'noindex, nofollow');
+  }
+});
+
+// Public, unauthenticated robots.txt — gated by PUBLIC_SITE.
+app.get('/robots.txt', (c) =>
+  c.text(robotsTxt(isPublicSite(c.env)), 200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    // Never cache: flipping PUBLIC_SITE must take effect on the next request.
+    'Cache-Control': 'no-store',
+  }),
+);
 
 app.notFound((c) =>
   c.json({ error: { code: 'not_found', message: 'Not found' } }, 404),
