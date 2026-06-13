@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { LOCALES, THEMES, type UpdateMe, AI_PROVIDERS, type AiProvider } from '@bodyatlas/shared';
 import { useI18n, type MessageKey } from '../i18n';
 import { api } from '../lib/api';
@@ -17,6 +18,7 @@ import {
 } from '../lib/native';
 import { localDayKey } from '../lib/buckets';
 import { addDays } from '../lib/format';
+import { downloadExport, deleteAccount } from '../lib/account';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -63,6 +65,15 @@ export function SettingsPage() {
   const [ahError, setAhError] = useState(false);
   const createSleep = useCreateSleep();
   const createMeasurement = useCreateMeasurement();
+
+  // Account export state
+  const [exportError, setExportError] = useState(false);
+
+  // Account deletion state
+  const [confirmText, setConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const confirmWord = t('account.deleteConfirmWord');
 
   function getDefaultModel(provider: AiProvider | ''): string {
     if (provider === 'claude') return 'claude-opus-4-8';
@@ -647,6 +658,80 @@ export function SettingsPage() {
           )}
         </section>
       )}
+
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: '1rem', marginBottom: 12 }}>{t('account.section')}</h2>
+        <button
+          type="button"
+          onClick={async () => {
+            setExportError(false);
+            try {
+              await downloadExport();
+            } catch {
+              setExportError(true);
+            }
+          }}
+          style={{
+            padding: '10px 16px',
+            background: 'var(--surface-2)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            cursor: 'pointer',
+          }}
+        >
+          {t('account.export')}
+        </button>
+        {exportError && (
+          <p style={{ color: 'var(--negative)' }}>{t('account.exportError')}</p>
+        )}
+
+        <p style={{ marginTop: 16 }}>
+          <Link to="/privacy">{t('privacy.link')}</Link>
+        </p>
+
+        <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <h3 style={{ color: 'var(--negative)' }}>{t('account.dangerZone')}</h3>
+          <p style={{ color: 'var(--text-muted)' }}>{t('account.deleteWarning')}</p>
+          <label style={{ display: 'block', marginBottom: 8 }}>
+            {t('account.deleteConfirmLabel')}
+            <input
+              style={fieldStyle}
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={confirmText !== confirmWord || deleting}
+            onClick={async () => {
+              setDeleteError(false);
+              setDeleting(true);
+              try {
+                await deleteAccount();
+                window.location.href = '/';
+              } catch {
+                setDeleteError(true);
+                setDeleting(false);
+              }
+            }}
+            style={{
+              padding: '10px 16px',
+              background: 'var(--negative)',
+              color: 'var(--accent-contrast)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              cursor: confirmText !== confirmWord || deleting ? 'not-allowed' : 'pointer',
+              opacity: confirmText !== confirmWord || deleting ? 0.5 : 1,
+            }}
+          >
+            {t('account.delete')}
+          </button>
+          {deleteError && (
+            <p style={{ color: 'var(--negative)' }}>{t('account.deleteError')}</p>
+          )}
+        </div>
+      </section>
 
       <form method="post" action="/auth/logout">
         <button

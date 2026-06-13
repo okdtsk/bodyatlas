@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router';
 import { SettingsPage } from './pages/SettingsPage';
 import { I18nProvider } from './i18n';
 
@@ -40,7 +41,9 @@ function makeSetup(responseOverride?: Record<string, unknown>) {
   render(
     <QueryClientProvider client={client}>
       <I18nProvider locale="en">
-        <SettingsPage />
+        <MemoryRouter>
+          <SettingsPage />
+        </MemoryRouter>
       </I18nProvider>
     </QueryClientProvider>,
   );

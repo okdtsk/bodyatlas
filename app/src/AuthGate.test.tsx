@@ -42,6 +42,7 @@ describe('auth gate', () => {
       theme: 'gym-dark',
       unit: 'kg',
       timezone: 'Asia/Tokyo',
+      onboardedAt: '2026-01-01T00:00:00Z',
       targetKcal: null,
       targetProteinG: null,
       targetFatG: null,

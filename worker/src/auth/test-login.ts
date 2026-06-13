@@ -16,12 +16,17 @@ export const testLoginRoutes = new Hono<AppEnv>().get('/test-login', async (c) =
   const existing = await db.query.users.findFirst({ where: eq(schema.users.googleSub, 'e2e-sub') });
   const userId = existing?.id ?? crypto.randomUUID();
   if (!existing) {
+    // Stamp onboardedAt so the test session lands directly in the app shell
+    // (the E2E specs exercise core flows, not the first-run wizard).
     await db.insert(schema.users).values({
       id: userId,
       googleSub: 'e2e-sub',
       email: 'e2e@example.com',
       name: 'E2E',
+      onboardedAt: new Date(),
     });
+  } else if (existing.onboardedAt == null) {
+    await db.update(schema.users).set({ onboardedAt: new Date() }).where(eq(schema.users.id, userId));
   }
   const token = await createSession(c.env.SESSIONS, userId);
   setCookie(c, SESSION_COOKIE, token, {

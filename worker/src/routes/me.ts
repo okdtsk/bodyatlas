@@ -38,8 +38,10 @@ export const meRoutes = new Hono<ProtectedEnv>()
       }
     }),
     async (c) => {
-      const patch = c.req.valid('json');
+      const { onboarded, ...prefs } = c.req.valid('json');
       const db = getDb(c.env.DB);
+      const patch: Record<string, unknown> = { ...prefs };
+      if (onboarded) patch.onboardedAt = new Date();
       if (Object.keys(patch).length > 0) {
         await db
           .update(schema.users)

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router';
 import { useI18n } from '../i18n';
 import { isNativeShell, nativeGoogleSignIn } from '../lib/native';
 
@@ -83,6 +84,9 @@ export function LoginPage() {
         </a>
       )}
       {error && <p style={{ color: 'var(--negative)', maxWidth: 320 }}>{error}</p>}
+      <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+        {t('privacy.link')}
+      </Link>
     </main>
   );
 }

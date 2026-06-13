@@ -161,6 +161,10 @@ export const en = {
   'today.noSleep': 'No sleep logged',
   'today.noWeight': 'No weight logged yet',
   'today.eaten': 'eaten',
+  'empty.today': 'Log your first workout or meal to see your day take shape.',
+  'empty.train': 'Start your first workout — from a template or from scratch.',
+  'empty.health': 'Log a meal, sleep, or body measurement to get started.',
+  'empty.trends': 'Trends appear once you have a few days of data.',
   'settings.tokens': 'API tokens',
   'settings.tokenName': 'Token name',
   'settings.createToken': 'Create token',
@@ -200,6 +204,42 @@ export const en = {
   'offline.pending': 'Pending sync',
   'offline.failed': 'Sync failed',
   'offline.pendingCount': '{n} waiting to sync',
+  'onboarding.welcome': 'Welcome to BodyAtlas',
+  'onboarding.welcomeBody': 'Let’s set up a few basics so the app fits you.',
+  'onboarding.prefsTitle': 'Your preferences',
+  'onboarding.targetsTitle': 'Nutrition targets (optional)',
+  'onboarding.timezoneTitle': 'Your timezone',
+  'onboarding.next': 'Next',
+  'onboarding.finish': 'Get started',
+  'onboarding.skip': 'Skip',
+  'account.section': 'Account',
+  'account.export': 'Export my data',
+  'account.exportError': 'Export failed. Please try again.',
+  'account.dangerZone': 'Danger zone',
+  'account.delete': 'Delete account',
+  'account.deleteWarning':
+    'This permanently deletes your account and all your data. This cannot be undone.',
+  'account.deleteConfirmLabel': 'Type DELETE to confirm',
+  'account.deleteConfirmWord': 'DELETE',
+  'account.deleteError': 'Could not delete your account. Please try again.',
+  'privacy.title': 'Privacy Policy',
+  'privacy.intro':
+    'BodyAtlas is a personal health and workout tracker. This page explains what it stores and how it is handled.',
+  'privacy.dataTitle': 'What we store',
+  'privacy.dataBody':
+    'Your workouts, meals, sleep, and body measurements, plus basic Google profile information (your name and email) used to sign you in.',
+  'privacy.storageTitle': 'Where it is stored',
+  'privacy.storageBody':
+    'Data is stored on Cloudflare (D1 database and KV). If you connect an AI provider, your API key is bring-your-own and encrypted at rest; it is never shared.',
+  'privacy.rightsTitle': 'Your data, your control',
+  'privacy.rightsBody':
+    'You can export all of your data or permanently delete your account and everything in it at any time from Settings.',
+  'privacy.sharingTitle': 'Sharing',
+  'privacy.sharingBody':
+    'Your data is not sold or shared with third parties, and there is no advertising or third-party tracking.',
+  'privacy.contact': 'Questions? Contact the app owner.',
+  'privacy.back': 'Back',
+  'privacy.link': 'Privacy',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

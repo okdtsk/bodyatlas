@@ -14,6 +14,7 @@ export function TrainPage() {
 
   const active = activeData?.workout ?? null;
   const lastWorkoutId = recent?.[0]?.id;
+  const isFirstRun = !active && !recentPending && recent?.length === 0;
 
   const begin = (input: { templateId?: string; copyFromWorkoutId?: string }) =>
     start.mutate(input, { onSuccess: () => navigate('/train/session') });
@@ -39,6 +40,9 @@ export function TrainPage() {
 
       {!active && (
         <>
+          {isFirstRun && (
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.train')}</p>
+          )}
           <div className="section-title">{t('train.start')}</div>
           <div className="row" style={{ flexWrap: 'wrap' }}>
             <button className="btn btn-primary" onClick={() => begin({})} disabled={start.isPending}>

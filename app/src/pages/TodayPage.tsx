@@ -53,9 +53,27 @@ export function TodayPage() {
   const sleepRecords = sleepQuery.data ?? [];
   const lastSleep = sleepRecords.length > 0 ? sleepRecords[0] : null;
 
+  const anyLoading =
+    mealsQuery.isPending ||
+    activeQuery.isPending ||
+    recentWorkoutsQuery.isPending ||
+    measurementsQuery.isPending ||
+    sleepQuery.isPending;
+  const isEmpty =
+    !anyLoading &&
+    meals.length === 0 &&
+    !activeWorkout &&
+    !doneToday &&
+    latestWeight?.weightKg == null &&
+    lastSleep == null;
+
   return (
     <section>
       <h1 className="section-title" style={{ marginBottom: 16 }}>{t('nav.today')}</h1>
+
+      {isEmpty && (
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.today')}</p>
+      )}
 
       <div className="stack" style={{ gap: 12 }}>
         {/* Nutrition card */}
