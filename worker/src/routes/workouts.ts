@@ -228,6 +228,10 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       const we = await ownedWorkoutExercise(db, c.get('userId'), c.req.param('id'), c.req.param('weId'));
       if (!we) return c.json(notFound, 404);
       const input = c.req.valid('json');
+      if (input.clientId) {
+        const dup = await db.query.sets.findFirst({ where: eq(schema.sets.clientId, input.clientId) });
+        if (dup) return c.json(dup, 200);
+      }
       const last = await db
         .select({ position: schema.sets.position })
         .from(schema.sets)
@@ -237,6 +241,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
       const set = {
         id: crypto.randomUUID(),
         workoutExerciseId: we.id,
+        clientId: input.clientId ?? null,
         position: (last[0]?.position ?? 0) + 1,
         weightKg: input.weightKg ?? null,
         reps: input.reps ?? null,
@@ -245,7 +250,7 @@ export const workoutsRoutes = new Hono<ProtectedEnv>()
         distanceM: input.distanceM ?? null,
         note: input.note ?? null,
       };
-      await db.insert(schema.sets).values(set);
+      await db.insert(schema.sets).values(set).onConflictDoNothing({ target: schema.sets.clientId });
       return c.json(set, 201);
     },
   )
