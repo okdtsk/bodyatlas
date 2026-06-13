@@ -18,3 +18,9 @@ export async function downloadExport(): Promise<void> {
     URL.revokeObjectURL(url);
   }
 }
+
+/** Permanently delete the account; the server revokes the session. */
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch('/api/account', { method: 'DELETE', credentials: 'same-origin' });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+}

@@ -203,6 +203,13 @@ export const en = {
   'account.section': 'Account',
   'account.export': 'Export my data',
   'account.exportError': 'Export failed. Please try again.',
+  'account.dangerZone': 'Danger zone',
+  'account.delete': 'Delete account',
+  'account.deleteWarning':
+    'This permanently deletes your account and all your data. This cannot be undone.',
+  'account.deleteConfirmLabel': 'Type DELETE to confirm',
+  'account.deleteConfirmWord': 'DELETE',
+  'account.deleteError': 'Could not delete your account. Please try again.',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

@@ -205,4 +205,10 @@ export const ja: Record<MessageKey, string> = {
   'account.section': 'アカウント',
   'account.export': 'データをエクスポート',
   'account.exportError': 'エクスポートに失敗しました。',
+  'account.dangerZone': '危険な操作',
+  'account.delete': 'アカウントを削除',
+  'account.deleteWarning': 'アカウントとすべてのデータが完全に削除されます。元に戻せません。',
+  'account.deleteConfirmLabel': '確認のため DELETE と入力してください',
+  'account.deleteConfirmWord': 'DELETE',
+  'account.deleteError': 'アカウントを削除できませんでした。もう一度お試しください。',
 };
