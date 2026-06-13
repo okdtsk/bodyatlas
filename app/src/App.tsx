@@ -6,6 +6,7 @@ import { ExerciseHistoryPage } from './pages/ExerciseHistoryPage';
 import { ExercisesPage } from './pages/ExercisesPage';
 import { HealthPage } from './pages/HealthPage';
 import { LoginPage } from './pages/LoginPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 import { SessionPage } from './pages/SessionPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TemplateEditorPage } from './pages/TemplateEditorPage';
@@ -33,13 +34,14 @@ export function App() {
   return (
     <I18nProvider locale={locale}>
       <ThemeProvider theme={theme}>
-        {isPending ? (
-          <Loading />
-        ) : me === null ? (
-          <LoginPage />
-        ) : (
-          <BrowserRouter>
-            <Routes>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/privacy" element={<PrivacyPage />} />
+            {isPending ? (
+              <Route path="*" element={<Loading />} />
+            ) : me == null ? (
+              <Route path="*" element={<LoginPage />} />
+            ) : (
               <Route element={<AppLayout />}>
                 <Route index element={<TodayPage />} />
                 <Route path="train">
@@ -55,9 +57,9 @@ export function App() {
                 <Route path="trends" element={<TrendsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
-            </Routes>
-          </BrowserRouter>
-        )}
+            )}
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </I18nProvider>
   );

@@ -210,6 +210,24 @@ export const en = {
   'account.deleteConfirmLabel': 'Type DELETE to confirm',
   'account.deleteConfirmWord': 'DELETE',
   'account.deleteError': 'Could not delete your account. Please try again.',
+  'privacy.title': 'Privacy Policy',
+  'privacy.intro':
+    'BodyAtlas is a personal health and workout tracker. This page explains what it stores and how it is handled.',
+  'privacy.dataTitle': 'What we store',
+  'privacy.dataBody':
+    'Your workouts, meals, sleep, and body measurements, plus basic Google profile information (your name and email) used to sign you in.',
+  'privacy.storageTitle': 'Where it is stored',
+  'privacy.storageBody':
+    'Data is stored on Cloudflare (D1 database and KV). If you connect an AI provider, your API key is bring-your-own and encrypted at rest; it is never shared.',
+  'privacy.rightsTitle': 'Your data, your control',
+  'privacy.rightsBody':
+    'You can export all of your data or permanently delete your account and everything in it at any time from Settings.',
+  'privacy.sharingTitle': 'Sharing',
+  'privacy.sharingBody':
+    'Your data is not sold or shared with third parties, and there is no advertising or third-party tracking.',
+  'privacy.contact': 'Questions? Contact the app owner.',
+  'privacy.back': 'Back',
+  'privacy.link': 'Privacy',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

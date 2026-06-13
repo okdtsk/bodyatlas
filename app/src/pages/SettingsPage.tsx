@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { LOCALES, THEMES, type UpdateMe, AI_PROVIDERS, type AiProvider } from '@bodyatlas/shared';
 import { useI18n, type MessageKey } from '../i18n';
 import { api } from '../lib/api';
@@ -684,6 +685,10 @@ export function SettingsPage() {
         {exportError && (
           <p style={{ color: 'var(--negative)' }}>{t('account.exportError')}</p>
         )}
+
+        <p style={{ marginTop: 16 }}>
+          <Link to="/privacy">{t('privacy.link')}</Link>
+        </p>
 
         <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
           <h3 style={{ color: 'var(--negative)' }}>{t('account.dangerZone')}</h3>

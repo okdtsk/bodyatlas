@@ -63,7 +63,9 @@ describe('SettingsPage AI section', () => {
     render(
       <QueryClientProvider client={client}>
         <I18nProvider locale="en">
-          <SettingsPage />
+          <MemoryRouter>
+            <SettingsPage />
+          </MemoryRouter>
         </I18nProvider>
       </QueryClientProvider>,
     );

@@ -211,4 +211,22 @@ export const ja: Record<MessageKey, string> = {
   'account.deleteConfirmLabel': '確認のため DELETE と入力してください',
   'account.deleteConfirmWord': 'DELETE',
   'account.deleteError': 'アカウントを削除できませんでした。もう一度お試しください。',
+  'privacy.title': 'プライバシーポリシー',
+  'privacy.intro':
+    'BodyAtlas は個人向けの健康・ワークアウト記録アプリです。このページでは保存されるデータとその扱いについて説明します。',
+  'privacy.dataTitle': '保存するデータ',
+  'privacy.dataBody':
+    'ワークアウト、食事、睡眠、身体測定の記録に加え、サインインに使う基本的な Google プロフィール情報（氏名とメールアドレス）を保存します。',
+  'privacy.storageTitle': '保存場所',
+  'privacy.storageBody':
+    'データは Cloudflare（D1 データベースと KV）に保存されます。AI プロバイダーを連携する場合、API キーはご自身のものを使用し、保存時に暗号化されます。第三者と共有されることはありません。',
+  'privacy.rightsTitle': 'データの管理',
+  'privacy.rightsBody':
+    '設定からいつでも、すべてのデータをエクスポートしたり、アカウントとすべてのデータを完全に削除したりできます。',
+  'privacy.sharingTitle': '共有について',
+  'privacy.sharingBody':
+    'データを第三者に販売・共有することはなく、広告や第三者によるトラッキングもありません。',
+  'privacy.contact': 'ご質問はアプリ運営者までお問い合わせください。',
+  'privacy.back': '戻る',
+  'privacy.link': 'プライバシー',
 };
