@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
+import { offlineController, offlineQueue } from '../lib/offline';
+import { OfflineIndicator } from './OfflineIndicator';
 import { QuickLogSheet } from './QuickLogSheet';
 
 const TABS: { to: string; key: MessageKey; icon: string }[] = [
@@ -15,8 +17,20 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    void offlineQueue.load().then(() => {
+      if (active) void offlineController.start();
+    });
+    return () => {
+      active = false;
+      offlineController.stop();
+    };
+  }, []);
+
   return (
     <div className="app-layout">
+      <OfflineIndicator />
       <nav className="app-nav" aria-label="Main">
         {TABS.map(({ to, key, icon }) => (
           <NavLink

@@ -9,6 +9,8 @@ import { Skeleton } from '../components/Skeleton';
 import { MealFormSheet } from '../components/MealFormSheet';
 import { SleepFormSheet } from '../components/SleepFormSheet';
 import { MeasurementFormSheet } from '../components/MeasurementFormSheet';
+import { PendingBadge } from '../components/PendingBadge';
+import { useQueuedOpsByKind } from '../lib/offline/usePendingOps';
 
 type SheetState =
   | null
@@ -87,6 +89,10 @@ export function HealthPage() {
   const meals = mealsQuery.data ?? [];
   const sleepRecords = sleepQuery.data ?? [];
   const measurements = measurementsQuery.data ?? [];
+
+  const pendingMeals = useQueuedOpsByKind('meal');
+  const pendingSleep = useQueuedOpsByKind('sleep');
+  const pendingMeasurements = useQueuedOpsByKind('measurement');
 
   const totalKcal = sumBy(meals, (m) => m.calories);
   const totalProtein = sumBy(meals, (m) => m.proteinG);
@@ -171,10 +177,20 @@ export function HealthPage() {
 
       {mealsQuery.isPending ? (
         <Skeleton count={2} height={52} />
-      ) : meals.length === 0 ? (
+      ) : meals.length === 0 && pendingMeals.length === 0 ? (
         <p className="muted">{t('health.noMeals')}</p>
       ) : (
         <div className="stack" style={{ marginTop: 8, gap: 6 }}>
+          {pendingMeals.map((op) => (
+            <div
+              key={op.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.7 }}
+            >
+              <span style={{ flex: 1, fontWeight: 500 }}>{String(op.payload.name ?? '')}</span>
+              <PendingBadge failed={op.status === 'failed'} />
+            </div>
+          ))}
           {meals.map((meal) => (
             <div
               key={meal.id}
@@ -199,7 +215,7 @@ export function HealthPage() {
       <div className="section-title" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.sleep')}</div>
       {sleepQuery.isPending ? (
         <Skeleton height={72} />
-      ) : sleepRecords.length === 0 ? (
+      ) : sleepRecords.length === 0 && pendingSleep.length === 0 ? (
         <div>
           <p className="muted">{t('health.noSleep')}</p>
           <button
@@ -212,6 +228,16 @@ export function HealthPage() {
         </div>
       ) : (
         <div className="stack" style={{ gap: 8 }}>
+          {pendingSleep.map((op) => (
+            <div
+              key={op.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}
+            >
+              <span>{t('health.sleep')}</span>
+              <PendingBadge failed={op.status === 'failed'} />
+            </div>
+          ))}
           {sleepRecords.map((s) => (
             <div
               key={s.id}
@@ -236,7 +262,7 @@ export function HealthPage() {
       <div className="section-title" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.body')}</div>
       {measurementsQuery.isPending ? (
         <Skeleton height={64} />
-      ) : measurements.length === 0 ? (
+      ) : measurements.length === 0 && pendingMeasurements.length === 0 ? (
         <div>
           <p className="muted">{t('health.noMeasurement')}</p>
           <button
@@ -249,6 +275,22 @@ export function HealthPage() {
         </div>
       ) : (
         <div className="stack" style={{ gap: 8 }}>
+          {pendingMeasurements.map((op) => (
+            <div
+              key={op.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}
+            >
+              <span>
+                {op.payload.weightKg != null
+                  ? `${String(op.payload.weightKg)} ${t('health.weight')}`
+                  : op.payload.bodyFatPct != null
+                    ? `${String(op.payload.bodyFatPct)}% ${t('health.bodyFat')}`
+                    : t('health.body')}
+              </span>
+              <PendingBadge failed={op.status === 'failed'} />
+            </div>
+          ))}
           {measurements.map((m) => (
             <div
               key={m.id}

@@ -6,6 +6,8 @@ import { Pips } from '../components/Pips';
 import { ProgressRing } from '../components/ProgressRing';
 import { SetInputRow } from '../components/SetInputRow';
 import { Skeleton } from '../components/Skeleton';
+import { PendingBadge } from '../components/PendingBadge';
+import { useQueuedOpsByKind } from '../lib/offline/usePendingOps';
 import { exerciseName, formatDay, formatSet, weightDelta } from '../lib/format';
 import {
   useActiveWorkout,
@@ -41,6 +43,7 @@ function ExerciseBlock({
 }) {
   const { t, locale } = useI18n();
   const { data: last } = useLastSets(we.exercise.id, workoutId);
+  const pendingSets = useQueuedOpsByKind('set').filter((op) => op.context?.weId === we.id);
   const logSet = useLogSet(workoutId, we.id);
   const deleteSet = useDeleteSet(workoutId, we.id);
   const removeExercise = useRemoveWorkoutExercise(workoutId);
@@ -114,6 +117,13 @@ function ExerciseBlock({
                 </button>
               </div>
               {s.note && <p className="set-note">{s.note}</p>}
+            </div>
+          ))}
+
+          {pendingSets.map((op) => (
+            <div key={op.id} className="row" style={{ gap: 8, opacity: 0.7 }}>
+              <span>{op.payload.reps != null ? `${String(op.payload.reps)} ${t('field.reps')}` : '—'}</span>
+              <PendingBadge failed={op.status === 'failed'} />
             </div>
           ))}
 

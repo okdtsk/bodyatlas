@@ -198,4 +198,8 @@ export const ja: Record<MessageKey, string> = {
   'native.syncResult': '睡眠{sleep}件・体組成{weight}件を取り込みました。',
   'native.syncPartial': '{failed}件の取り込みに失敗しました。',
   'native.syncError': '取り込みに失敗しました。',
+  'offline.offline': 'オフライン',
+  'offline.pending': '同期待ち',
+  'offline.failed': '同期に失敗',
+  'offline.pendingCount': '{n}件の同期待ち',
 };
