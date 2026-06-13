@@ -65,4 +65,18 @@ describe('flushQueue', () => {
     expect(send).not.toHaveBeenCalled();
     expect(result.flushed).toBe(0);
   });
+
+  it('calls onFlushed once per successfully flushed op (for cache reconciliation)', async () => {
+    const q = await queueWith(2);
+    const flushedKinds: string[] = [];
+    await flushQueue(q, async () => ok, (op) => flushedKinds.push(op.kind));
+    expect(flushedKinds).toEqual(['meal', 'meal']);
+  });
+
+  it('does not call onFlushed for a dead-lettered op', async () => {
+    const q = await queueWith(1);
+    const onFlushed = vi.fn();
+    await flushQueue(q, async () => ({ ok: false, status: 422 }), onFlushed);
+    expect(onFlushed).not.toHaveBeenCalled();
+  });
 });

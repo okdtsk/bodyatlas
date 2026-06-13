@@ -53,9 +53,15 @@ export class OfflineQueue {
     this.refresh();
   }
 
-  /** Ops still awaiting a successful flush (status === 'pending'), FIFO order. */
+  /**
+   * Ops still awaiting a successful flush (status === 'pending'), FIFO order.
+   * Sorted by createdAt because after a reload the IndexedDB store returns rows
+   * in key (random UUID) order, not insertion order.
+   */
   pending(): QueuedOp[] {
-    return this.ops.filter((o) => o.status === 'pending');
+    return this.ops
+      .filter((o) => o.status === 'pending')
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
   getSnapshot(): QueuedOp[] {
