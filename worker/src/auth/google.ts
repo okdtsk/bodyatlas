@@ -33,6 +33,14 @@ function isHttps(requestUrl: string): boolean {
   return new URL(requestUrl).protocol === 'https:';
 }
 
+/** Accepts only same-origin absolute paths (e.g. "/authorize?..."), rejecting
+ *  protocol-relative ("//evil") and absolute URLs to other origins. */
+function safeReturnTo(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  if (!value.startsWith('/') || value.startsWith('//')) return undefined;
+  return value;
+}
+
 const badRequest = (message: string) =>
   ({ error: { code: 'oauth_invalid', message } }) as const;
 
@@ -45,14 +53,25 @@ export const authRoutes = new Hono<AppEnv>()
     // Native iOS shell flows (ASWebAuthenticationSession) are tagged so the
     // callback hands the session back via a one-time code instead of a cookie.
     const native = c.req.query('native') === '1';
+    const returnTo = safeReturnTo(c.req.query('return_to'));
 
-    setCookie(c, OAUTH_COOKIE, JSON.stringify({ state, verifier, ...(native ? { native: true } : {}) }), {
-      httpOnly: true,
-      secure: isHttps(c.req.url),
-      sameSite: 'Lax',
-      path: '/auth',
-      maxAge: 600,
-    });
+    setCookie(
+      c,
+      OAUTH_COOKIE,
+      JSON.stringify({
+        state,
+        verifier,
+        ...(native ? { native: true } : {}),
+        ...(returnTo ? { returnTo } : {}),
+      }),
+      {
+        httpOnly: true,
+        secure: isHttps(c.req.url),
+        sameSite: 'Lax',
+        path: '/auth',
+        maxAge: 600,
+      },
+    );
 
     const params = new URLSearchParams({
       client_id: c.env.GOOGLE_CLIENT_ID,
@@ -75,9 +94,9 @@ export const authRoutes = new Hono<AppEnv>()
       return c.json(badRequest('Missing OAuth parameters'), 400);
     }
 
-    let stored: { state: string; verifier: string; native?: boolean };
+    let stored: { state: string; verifier: string; native?: boolean; returnTo?: string };
     try {
-      stored = JSON.parse(raw) as { state: string; verifier: string; native?: boolean };
+      stored = JSON.parse(raw) as { state: string; verifier: string; native?: boolean; returnTo?: string };
     } catch {
       return c.json(badRequest('Malformed OAuth cookie'), 400);
     }
@@ -155,8 +174,8 @@ export const authRoutes = new Hono<AppEnv>()
       path: '/',
       maxAge: SESSION_TTL_SECONDS,
     });
-    const homeUrl = new URL('/', c.req.url).toString();
-    return c.redirect(homeUrl);
+    const dest = safeReturnTo(stored.returnTo) ?? '/';
+    return c.redirect(new URL(dest, c.req.url).toString());
   })
   .post('/native/exchange', async (c) => {
     let body: unknown;
