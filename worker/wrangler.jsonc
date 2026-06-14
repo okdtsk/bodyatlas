@@ -37,7 +37,7 @@
   ],
   "kv_namespaces": [
     { "binding": "SESSIONS", "id": "e25c68f7159e4ebaa11c04c3df74721f" },
-    { "binding": "OAUTH_KV", "id": "PLACEHOLDER_CREATE_BEFORE_DEPLOY" }
+    { "binding": "OAUTH_KV", "id": "6d97de780b8143fe9f7f472d93cea067" }
   ],
   "ratelimits": [
     { "name": "RL_API", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
