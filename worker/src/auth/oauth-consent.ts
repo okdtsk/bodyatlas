@@ -9,11 +9,6 @@ import type { AppEnv } from '../types';
 
 const CONSENT_TTL_SECONDS = 600;
 
-const b64urlEncode = (s: string) =>
-  btoa(s).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
-const b64urlDecode = (s: string) =>
-  atob(s.replaceAll('-', '+').replaceAll('_', '/'));
-
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (ch) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!,
@@ -21,7 +16,6 @@ const escapeHtml = (s: string) =>
 
 function consentHtml(opts: {
   clientName: string;
-  reqB64: string;
   csrf: string;
   locale: string;
 }): string {
@@ -47,7 +41,6 @@ function consentHtml(opts: {
 </style></head><body><div class="card">
 <h1>${title}</h1><p>${body}</p>
 <form method="post" action="/authorize">
-  <input type="hidden" name="req" value="${opts.reqB64}">
   <input type="hidden" name="csrf" value="${escapeHtml(opts.csrf)}">
   <div class="row">
     <button class="deny" name="decision" value="deny" type="submit">${deny}</button>
@@ -58,7 +51,12 @@ function consentHtml(opts: {
 
 export const oauthConsentRoutes = new Hono<AppEnv>()
   .get('/authorize', async (c) => {
-    const oauthReq = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
+    let oauthReq: AuthRequest;
+    try {
+      oauthReq = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
+    } catch {
+      return c.text('Invalid authorization request', 400);
+    }
 
     const token = getCookie(c, SESSION_COOKIE);
     const userId = token ? await getSessionUserId(c.env.SESSIONS, token) : null;
@@ -71,17 +69,16 @@ export const oauthConsentRoutes = new Hono<AppEnv>()
     const clientName = client?.clientName ?? oauthReq.clientId;
 
     const csrf = crypto.randomUUID();
-    await c.env.SESSIONS.put(`consent:${csrf}`, userId, {
-      expirationTtl: CONSENT_TTL_SECONDS,
-    });
+    await c.env.SESSIONS.put(
+      `consent:${csrf}`,
+      JSON.stringify({ userId, req: oauthReq }),
+      { expirationTtl: CONSENT_TTL_SECONDS },
+    );
 
     const user = await getDb(c.env.DB).query.users.findFirst({
       where: eq(schema.users.id, userId),
     });
-    const reqB64 = b64urlEncode(JSON.stringify(oauthReq));
-    return c.html(
-      consentHtml({ clientName, reqB64, csrf, locale: user?.locale ?? 'en' }),
-    );
+    return c.html(consentHtml({ clientName, csrf, locale: user?.locale ?? 'en' }));
   })
   .post('/authorize', async (c) => {
     const token = getCookie(c, SESSION_COOKIE);
@@ -90,20 +87,20 @@ export const oauthConsentRoutes = new Hono<AppEnv>()
 
     const form = await c.req.parseBody();
     const csrf = typeof form.csrf === 'string' ? form.csrf : '';
-    const reqRaw = typeof form.req === 'string' ? form.req : '';
     const decision = typeof form.decision === 'string' ? form.decision : 'deny';
 
-    // One-time CSRF token bound to this user.
-    const csrfUser = csrf ? await c.env.SESSIONS.get(`consent:${csrf}`) : null;
-    if (!csrfUser || csrfUser !== userId) return c.text('Invalid request', 403);
+    const stored = csrf ? await c.env.SESSIONS.get(`consent:${csrf}`) : null;
+    if (!stored) return c.text('Invalid request', 403);
     await c.env.SESSIONS.delete(`consent:${csrf}`);
 
-    let oauthReq: AuthRequest;
+    let parsed: { userId: string; req: AuthRequest };
     try {
-      oauthReq = JSON.parse(b64urlDecode(reqRaw)) as AuthRequest;
+      parsed = JSON.parse(stored) as { userId: string; req: AuthRequest };
     } catch {
       return c.text('Invalid request', 400);
     }
+    if (parsed.userId !== userId) return c.text('Invalid request', 403);
+    const oauthReq = parsed.req;
 
     if (decision !== 'approve') {
       const url = new URL(oauthReq.redirectUri);
