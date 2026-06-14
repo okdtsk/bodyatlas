@@ -9,7 +9,6 @@ import { mealsRoutes } from './routes/meals';
 import { meRoutes } from './routes/me';
 import { sleepRoutes } from './routes/sleep';
 import { templatesRoutes } from './routes/templates';
-import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
 import { aiRoutes } from './routes/ai';
@@ -35,7 +34,6 @@ export const apiApp = new Hono<AppEnv>()
   .route('/sleep', sleepRoutes)
   .route('/measurements', measurementsRoutes)
   .route('/trends', trendsRoutes)
-  .route('/tokens', tokensRoutes)
   .use('/ai/*', rateLimit((env) => (env as Bindings).RL_AI, (c) => c.get('userId') ?? null))
   .route('/ai', aiRoutes)
   .route('/account', accountRoutes);

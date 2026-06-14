@@ -189,23 +189,6 @@ export const bodyMeasurements = sqliteTable(
   ],
 );
 
-export const apiTokens = sqliteTable(
-  'api_tokens',
-  {
-    id: text('id').primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id),
-    name: text('name').notNull(),
-    tokenHash: text('token_hash').notNull().unique(),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .notNull()
-      .$defaultFn(() => new Date()),
-    lastUsedAt: integer('last_used_at', { mode: 'timestamp' }),
-  },
-  (t) => [index('idx_api_tokens_hash').on(t.tokenHash)],
-);
-
 export const aiSettings = sqliteTable('ai_settings', {
   userId: text('user_id')
     .primaryKey()
