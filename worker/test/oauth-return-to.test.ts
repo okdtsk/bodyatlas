@@ -31,6 +31,16 @@ describe('GET /auth/google?return_to', () => {
     expect(payload.returnTo).toBeUndefined();
   });
 
+  it('ignores a backslash-based open-redirect attempt', async () => {
+    const res = await SELF.fetch(
+      'https://example.com/auth/google?return_to=' + encodeURIComponent('/\\evil.com/steal'),
+      { redirect: 'manual' },
+    );
+    const value = /ba_oauth=([^;]+)/.exec(res.headers.get('Set-Cookie')!)![1]!;
+    const payload = JSON.parse(decodeURIComponent(value)) as { returnTo?: string };
+    expect(payload.returnTo).toBeUndefined();
+  });
+
   it('redirects the callback to a stored same-origin return_to', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
       new Response(

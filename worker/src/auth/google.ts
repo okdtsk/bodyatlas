@@ -33,12 +33,20 @@ function isHttps(requestUrl: string): boolean {
   return new URL(requestUrl).protocol === 'https:';
 }
 
-/** Accepts only same-origin absolute paths (e.g. "/authorize?..."), rejecting
- *  protocol-relative ("//evil") and absolute URLs to other origins. */
-function safeReturnTo(value: string | undefined): string | undefined {
+/** Accepts only same-origin paths (e.g. "/authorize?..."), rejecting protocol-relative
+ *  ("//evil"), backslash tricks ("/\\evil"), and absolute/off-origin URLs. Returns the
+ *  normalized path+query+hash, or undefined if unsafe. */
+function safeReturnTo(value: string | undefined, requestUrl: string): string | undefined {
   if (!value) return undefined;
   if (!value.startsWith('/') || value.startsWith('//')) return undefined;
-  return value;
+  try {
+    const base = new URL(requestUrl);
+    const resolved = new URL(value, base);
+    if (resolved.origin !== base.origin) return undefined;
+    return resolved.pathname + resolved.search + resolved.hash;
+  } catch {
+    return undefined;
+  }
 }
 
 const badRequest = (message: string) =>
@@ -53,7 +61,7 @@ export const authRoutes = new Hono<AppEnv>()
     // Native iOS shell flows (ASWebAuthenticationSession) are tagged so the
     // callback hands the session back via a one-time code instead of a cookie.
     const native = c.req.query('native') === '1';
-    const returnTo = safeReturnTo(c.req.query('return_to'));
+    const returnTo = safeReturnTo(c.req.query('return_to'), c.req.url);
 
     setCookie(
       c,
@@ -174,7 +182,7 @@ export const authRoutes = new Hono<AppEnv>()
       path: '/',
       maxAge: SESSION_TTL_SECONDS,
     });
-    const dest = safeReturnTo(stored.returnTo) ?? '/';
+    const dest = safeReturnTo(stored.returnTo, c.req.url) ?? '/';
     return c.redirect(new URL(dest, c.req.url).toString());
   })
   .post('/native/exchange', async (c) => {
