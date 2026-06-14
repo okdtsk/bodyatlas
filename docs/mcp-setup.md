@@ -1,83 +1,30 @@
-# BodyAtlas MCP Setup
+# MCP Connector Setup
 
-BodyAtlas exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) endpoint at `/mcp`.
-Any MCP client — Claude Code, claude.ai, or a custom agent — can connect to read and write your health data.
+bodyatlas is a remote MCP server with OAuth 2.1. Add it as a connector and sign in
+with your existing bodyatlas (Google) account — no API token to copy.
 
----
+**Endpoint:** `https://bodyatlas.okdtsk.dev/mcp`
 
-## 1. Create an API token
+## Claude (web & desktop)
+1. Settings → Connectors → **Add custom connector**.
+2. Name it "bodyatlas", URL `https://bodyatlas.okdtsk.dev/mcp`.
+3. Click connect → a bodyatlas page opens → sign in with Google if needed →
+   **Approve**. Claude can now call the tools.
 
-1. Open BodyAtlas and go to **Settings → API Tokens**.
-2. Click **New token**, give it a name (e.g. `claude-code`), and confirm.
-3. Copy the token that appears — it starts with `ba_` and is shown **only once**.
-   Store it somewhere safe (e.g. your password manager).
+## ChatGPT
+1. Enable **Developer mode / Connectors** (Settings → Connectors).
+2. Add an MCP server with URL `https://bodyatlas.okdtsk.dev/mcp`.
+3. Complete the OAuth sign-in + approval.
+   Note: ChatGPT *deep-research* connectors expect `search`/`fetch` tools; bodyatlas
+   exposes action tools (log_*, get_*) for the general/developer connector path.
 
-To revoke access at any time, return to **Settings → API Tokens** and delete the token.
+## Gemini
+The Gemini consumer app does not support custom MCP connectors yet. Use the **Gemini
+CLI**: `gemini mcp add bodyatlas https://bodyatlas.okdtsk.dev/mcp` (the CLI runs the
+same OAuth flow).
 
-> **Security note:** Each token grants full read/write access to your entire account
-> (all meals, workouts, measurements, and sleep records). Treat it like a password.
+## Tools
+log_meal, log_workout, log_weight, log_sleep, get_recent_workouts, get_trends, get_today.
 
----
-
-## 2. Connect Claude Code (CLI)
-
-Run this once — Claude Code remembers the server across sessions:
-
-```sh
-claude mcp add --transport http bodyatlas https://bodyatlas.okdtsk.dev/mcp \
-  --header "Authorization: Bearer ba_YOUR_TOKEN_HERE"
-```
-
-Replace `ba_YOUR_TOKEN_HERE` with the token you copied in step 1.
-
-Verify the connection:
-
-```sh
-claude mcp list
-# bodyatlas  https://bodyatlas.okdtsk.dev/mcp  (http)
-```
-
----
-
-## 3. Connect claude.ai (custom connector)
-
-1. In claude.ai, open **Settings → Integrations → Custom connectors**.
-2. Add a new connector:
-   - **URL:** `https://bodyatlas.okdtsk.dev/mcp`
-   - **Authentication:** Bearer token — paste your `ba_…` token.
-3. Save. Claude will discover the tools automatically.
-
----
-
-## 4. Available tools
-
-| Tool | Description |
-|------|-------------|
-| `log_meal` | Log a meal with optional timestamp, calories, protein, fat, and carbs. |
-| `log_workout` | Log a completed workout with exercises and sets (weight, reps, RPE, duration). |
-| `log_weight` | Log a body measurement: weight (kg) and/or body-fat percentage. |
-| `log_sleep` | Log a sleep record with bed time, wake time, and optional quality rating. |
-| `get_recent_workouts` | Retrieve the most recent workout summaries, newest first (up to 20). |
-| `get_trends` | Get trend data: strength progression, volume, nutrition vs. body, or sleep. |
-| `get_today` | Get today's nutrition totals vs. targets, workout status, last sleep, and latest weight. |
-
----
-
-## 5. Example prompts
-
-Once connected you can ask Claude things like:
-
-- *"Log that I ate oatmeal for breakfast — 350 kcal, 12 g protein."*
-- *"Show me my bench press progress over the last 3 months."*
-- *"Log my workout: 3 sets of 80 kg × 5 bench press at RPE 8."*
-- *"How did I sleep last night? What are my nutrition totals today?"*
-
----
-
-## 6. Local development
-
-When running `npm run dev` the MCP endpoint is available at `http://localhost:5173/mcp`
-(port may shift to `5174` if 5173 is occupied — check the Vite startup output).
-
-Use `E2E_TEST_LOGIN=1` in `worker/.dev.vars` and hit `GET /auth/test-login` to establish
-a session, then `POST /api/tokens` to create a local token for testing.
+## Revoking access
+Re-authorizing replaces the prior grant. (A grant-management UI is future work.)
