@@ -635,11 +635,12 @@ describe('full PKCE flow → authenticated /mcp call', () => {
     const consent = await SELF.fetch(authUrl, { headers: { Cookie: cookie } });
     expect(consent.status).toBe(200);
     const html = await consent.text();
-    const req = /name="req" value="([^"]+)"/.exec(html)![1]!;
     const csrf = /name="csrf" value="([^"]+)"/.exec(html)![1]!;
 
     // 2. POST /authorize approve → 302 to client redirect with ?code=.
-    const form = new URLSearchParams({ req, csrf, decision: 'approve' });
+    // The parsed request is stored server-side under the CSRF key; the form
+    // carries only csrf + decision (no client-supplied request data).
+    const form = new URLSearchParams({ csrf, decision: 'approve' });
     const approved = await SELF.fetch('https://example.com/authorize', {
       method: 'POST',
       headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' },
