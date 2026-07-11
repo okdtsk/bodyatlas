@@ -1,83 +1,82 @@
-# BodyAtlas MCP Setup
+# MCP Connector Setup
 
-BodyAtlas exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) endpoint at `/mcp`.
-Any MCP client — Claude Code, claude.ai, or a custom agent — can connect to read and write your health data.
+bodyatlas is a remote MCP server with OAuth 2.1. Add it as a connector and sign in
+with your existing bodyatlas (Google) account — no API token to copy.
 
----
+**Endpoint:** `https://bodyatlas.okdtsk.dev/mcp`
 
-## 1. Create an API token
+## Claude (web & desktop)
+1. Settings → Connectors → **Add custom connector**.
+2. Name it "bodyatlas", URL `https://bodyatlas.okdtsk.dev/mcp`.
+3. Click connect → a bodyatlas page opens → sign in with Google if needed →
+   **Approve**. Claude can now call the tools.
 
-1. Open BodyAtlas and go to **Settings → API Tokens**.
-2. Click **New token**, give it a name (e.g. `claude-code`), and confirm.
-3. Copy the token that appears — it starts with `ba_` and is shown **only once**.
-   Store it somewhere safe (e.g. your password manager).
+## ChatGPT
+1. Enable **Developer mode / Connectors** (Settings → Connectors).
+2. Add an MCP server with URL `https://bodyatlas.okdtsk.dev/mcp`.
+3. Complete the OAuth sign-in + approval.
+   Note: ChatGPT *deep-research* connectors expect `search`/`fetch` tools; bodyatlas
+   exposes action tools (log_*, get_*) for the general/developer connector path.
 
-To revoke access at any time, return to **Settings → API Tokens** and delete the token.
+## Gemini
+The Gemini consumer app does not support custom MCP connectors yet. Use the **Gemini
+CLI**: `gemini mcp add bodyatlas https://bodyatlas.okdtsk.dev/mcp` (the CLI runs the
+same OAuth flow).
 
-> **Security note:** Each token grants full read/write access to your entire account
-> (all meals, workouts, measurements, and sleep records). Treat it like a password.
+## Tools
+log_meal, log_workout, log_weight, log_sleep, get_recent_workouts, get_trends, get_today.
 
----
+## Revoking access
+Re-authorizing replaces the prior grant. (A grant-management UI is future work.)
 
-## 2. Connect Claude Code (CLI)
+## Troubleshooting
 
-Run this once — Claude Code remembers the server across sessions:
+### ChatGPT: "Dynamic client registration failed: registration endpoint returned 403"
+
+This 403 comes from **Cloudflare's edge, not from bodyatlas.** The OAuth provider and
+Worker never emit 403 — Cloudflare's bot protection blocks the connector's request
+before it reaches the Worker. ChatGPT registers using OpenAI bot user-agents
+(`ChatGPT-User/1.0`, `GPTBot`, `OAI-SearchBot`), which Cloudflare's zone-level bot
+rules (Bot Fight Mode / "Block AI bots" / Browser Integrity Check) reject.
+
+**Diagnose** — probe `/register` with different user-agents (Cloudflare, not the app,
+decides the outcome):
 
 ```sh
-claude mcp add --transport http bodyatlas https://bodyatlas.okdtsk.dev/mcp \
-  --header "Authorization: Bearer ba_YOUR_TOKEN_HERE"
+# a normal client succeeds …
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -H 'content-type: application/json' -d '{"redirect_uris":["https://example.com/cb"]}' \
+  https://bodyatlas.okdtsk.dev/register            # → 201
+
+# … while an OpenAI UA is blocked at the edge
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -A 'ChatGPT-User/1.0' \
+  -H 'content-type: application/json' -d '{"redirect_uris":["https://example.com/cb"]}' \
+  https://bodyatlas.okdtsk.dev/register            # → 403 when the edge is blocking
 ```
 
-Replace `ba_YOUR_TOKEN_HERE` with the token you copied in step 1.
+If the plain request returns 201 and the OpenAI-UA request returns 403, it's the edge.
 
-Verify the connection:
+**Fix (recommended — scoped, not zone-wide):** these bot settings are **zone-level**,
+so turning them off applies to *every* hostname and app under `okdtsk.dev`, not just
+bodyatlas. Instead of disabling protection zone-wide, keep it on and carve out only the
+connector paths with a WAF **Skip** rule:
 
-```sh
-claude mcp list
-# bodyatlas  https://bodyatlas.okdtsk.dev/mcp  (http)
-```
+- Cloudflare dashboard → the `okdtsk.dev` zone → **Security → WAF → Custom rules → Create**.
+- Expression (scopes the exception to bodyatlas's OAuth/MCP endpoints only):
+  ```
+  (http.host eq "bodyatlas.okdtsk.dev" and (
+    starts_with(http.request.uri.path, "/mcp") or
+    http.request.uri.path in {"/register" "/token" "/authorize"} or
+    starts_with(http.request.uri.path, "/.well-known/oauth")
+  ))
+  ```
+- Action: **Skip** → tick **Browser Integrity Check** (add other bot features if they
+  also catch it). On the Free plan, Browser Integrity Check is skippable per-rule;
+  Bot Fight Mode is not path-scopable (Super Bot Fight Mode / Pro+ is), so if it's the
+  blocker you either leave it off zone-wide or upgrade.
+- Re-run the probe → expect 201.
 
----
-
-## 3. Connect claude.ai (custom connector)
-
-1. In claude.ai, open **Settings → Integrations → Custom connectors**.
-2. Add a new connector:
-   - **URL:** `https://bodyatlas.okdtsk.dev/mcp`
-   - **Authentication:** Bearer token — paste your `ba_…` token.
-3. Save. Claude will discover the tools automatically.
-
----
-
-## 4. Available tools
-
-| Tool | Description |
-|------|-------------|
-| `log_meal` | Log a meal with optional timestamp, calories, protein, fat, and carbs. |
-| `log_workout` | Log a completed workout with exercises and sets (weight, reps, RPE, duration). |
-| `log_weight` | Log a body measurement: weight (kg) and/or body-fat percentage. |
-| `log_sleep` | Log a sleep record with bed time, wake time, and optional quality rating. |
-| `get_recent_workouts` | Retrieve the most recent workout summaries, newest first (up to 20). |
-| `get_trends` | Get trend data: strength progression, volume, nutrition vs. body, or sleep. |
-| `get_today` | Get today's nutrition totals vs. targets, workout status, last sleep, and latest weight. |
-
----
-
-## 5. Example prompts
-
-Once connected you can ask Claude things like:
-
-- *"Log that I ate oatmeal for breakfast — 350 kcal, 12 g protein."*
-- *"Show me my bench press progress over the last 3 months."*
-- *"Log my workout: 3 sets of 80 kg × 5 bench press at RPE 8."*
-- *"How did I sleep last night? What are my nutrition totals today?"*
-
----
-
-## 6. Local development
-
-When running `npm run dev` the MCP endpoint is available at `http://localhost:5173/mcp`
-(port may shift to `5174` if 5173 is occupied — check the Vite startup output).
-
-Use `E2E_TEST_LOGIN=1` in `worker/.dev.vars` and hit `GET /auth/test-login` to establish
-a session, then `POST /api/tokens` to create a local token for testing.
+Every other app or static page on `okdtsk.dev` then keeps full bot protection; only
+bodyatlas's connector endpoints skip the check. Disabling the toggles zone-wide also
+works but weakens the edge for the whole domain — prefer the scoped rule.

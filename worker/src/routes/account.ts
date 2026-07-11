@@ -30,8 +30,6 @@ export const accountRoutes = new Hono<ProtectedEnv>().get('/export', async (c) =
     .where(eq(schema.bodyMeasurements.userId, userId));
   const exercises = await db.select().from(schema.exercises).where(eq(schema.exercises.userId, userId));
 
-  const tokenRows = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.userId, userId));
-  const apiTokens = tokenRows.map((t) => ({ name: t.name, createdAt: t.createdAt, lastUsedAt: t.lastUsedAt }));
   const ai = await db.query.aiSettings.findFirst({ where: eq(schema.aiSettings.userId, userId) });
   const aiSettings = ai ? { provider: ai.provider, model: ai.model } : null;
 
@@ -44,7 +42,6 @@ export const accountRoutes = new Hono<ProtectedEnv>().get('/export', async (c) =
     sleep,
     measurements,
     exercises,
-    apiTokens,
     aiSettings,
   };
   const date = new Date().toISOString().slice(0, 10);
@@ -86,7 +83,6 @@ export const accountRoutes = new Hono<ProtectedEnv>().get('/export', async (c) =
     await db.delete(schema.meals).where(eq(schema.meals.userId, userId));
     await db.delete(schema.sleepRecords).where(eq(schema.sleepRecords.userId, userId));
     await db.delete(schema.bodyMeasurements).where(eq(schema.bodyMeasurements.userId, userId));
-    await db.delete(schema.apiTokens).where(eq(schema.apiTokens.userId, userId));
     await db.delete(schema.aiSettings).where(eq(schema.aiSettings.userId, userId));
     await db.delete(schema.exercises).where(eq(schema.exercises.userId, userId));
     await db.delete(schema.users).where(eq(schema.users.id, userId));

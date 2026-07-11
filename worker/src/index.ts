@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { OAuthProvider } from '@cloudflare/workers-oauth-provider';
 import { authRoutes } from './auth/google';
 import { testLoginRoutes } from './auth/test-login';
 import { requireAuth } from './auth/middleware';
@@ -8,14 +9,14 @@ import { mealsRoutes } from './routes/meals';
 import { meRoutes } from './routes/me';
 import { sleepRoutes } from './routes/sleep';
 import { templatesRoutes } from './routes/templates';
-import { tokensRoutes } from './routes/tokens';
 import { trendsRoutes } from './routes/trends';
 import { workoutsRoutes } from './routes/workouts';
 import { aiRoutes } from './routes/ai';
 import { accountRoutes } from './routes/account';
 import type { AppEnv, Bindings } from './types';
 import { BodyAtlasMCP } from './mcp/server';
-import { verifyToken } from './auth/tokens';
+import { mcpHandler } from './mcp/handler';
+import { oauthConsentRoutes } from './auth/oauth-consent';
 import { rateLimit } from './lib/rate-limit';
 import { isPublicSite, robotsTxt } from './lib/visibility';
 
@@ -33,7 +34,6 @@ export const apiApp = new Hono<AppEnv>()
   .route('/sleep', sleepRoutes)
   .route('/measurements', measurementsRoutes)
   .route('/trends', trendsRoutes)
-  .route('/tokens', tokensRoutes)
   .use('/ai/*', rateLimit((env) => (env as Bindings).RL_AI, (c) => c.get('userId') ?? null))
   .route('/ai', aiRoutes)
   .route('/account', accountRoutes);
@@ -73,42 +73,17 @@ app.route('/api', apiApp);
 app.use('/auth/*', rateLimit((env) => (env as Bindings).RL_AUTH, (c) => c.req.header('CF-Connecting-IP') ?? null));
 app.route('/auth', authRoutes);
 app.route('/auth', testLoginRoutes);
+app.route('/', oauthConsentRoutes);
 
 export type AppType = typeof apiApp;
 
-const mcpHandler = BodyAtlasMCP.serve('/mcp', { binding: 'BODYATLAS_MCP' });
-
-export default {
-  async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/')) {
-      // CORS preflights carry no Authorization header and mutate nothing —
-      // let the MCP handler answer them so browser-based connectors work.
-      if (request.method === 'OPTIONS') {
-        return mcpHandler.fetch(request, env, ctx);
-      }
-      const auth = request.headers.get('Authorization') ?? '';
-      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-      const userId = token ? await verifyToken(env.DB, token) : null;
-      if (!userId) {
-        return Response.json(
-          { error: { code: 'unauthorized', message: 'Valid bearer token required' } },
-          { status: 401 },
-        );
-      }
-      const mcpLimiter = env.RL_MCP;
-      if (mcpLimiter) {
-        const { success } = await mcpLimiter.limit({ key: token });
-        if (!success) {
-          return Response.json(
-            { error: { code: 'rate_limited', message: 'Too many requests.' } },
-            { status: 429, headers: { 'Retry-After': '60' } },
-          );
-        }
-      }
-      (ctx as ExecutionContext & { props: { userId: string } }).props = { userId };
-      return mcpHandler.fetch(request, env, ctx);
-    }
-    return app.fetch(request, env, ctx);
-  },
-};
+export default new OAuthProvider<Bindings>({
+  apiRoute: '/mcp',
+  apiHandler: mcpHandler as ExportedHandler<Bindings> & Pick<Required<ExportedHandler<Bindings>>, 'fetch'>,
+  // Hono app handles the SPA, /api, /auth, and the /authorize consent UI.
+  defaultHandler: app as unknown as ExportedHandler<Bindings>,
+  authorizeEndpoint: '/authorize',
+  tokenEndpoint: '/token',
+  clientRegistrationEndpoint: '/register',
+  scopesSupported: ['mcp'],
+});

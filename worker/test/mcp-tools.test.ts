@@ -226,9 +226,13 @@ describe('getRecentWorkouts', () => {
 describe('getTrends', () => {
   it('returns strength series for a named exercise', async () => {
     await seedUser('user-1');
+    // Seed relative to now so the workout always falls inside the `days` window
+    // below (an absolute date would age out of the window as time passes).
+    const startedAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const endedAt = new Date(startedAt.getTime() + 60 * 60 * 1000);
     await seedWorkout('w1', 'user-1', 'seed-barbell-bench-press', [{ weightKg: 80, reps: 8 }], {
-      startedAt: new Date('2026-06-10T10:00:00Z'),
-      endedAt: new Date('2026-06-10T11:00:00Z'),
+      startedAt,
+      endedAt,
     });
 
     const result = await getTrends(env.DB, 'user-1', {

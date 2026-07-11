@@ -1,3 +1,5 @@
+import type { OAuthHelpers } from '@cloudflare/workers-oauth-provider';
+
 /** Minimal shape of a Cloudflare Workers rate-limit binding. */
 export interface RateLimiter {
   limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -16,6 +18,8 @@ export type Bindings = {
   RL_AI?: RateLimiter;
   RL_AUTH?: RateLimiter;
   RL_MCP?: RateLimiter;
+  OAUTH_KV: KVNamespace;
+  OAUTH_PROVIDER: OAuthHelpers;
 };
 
 export type AppEnv = {

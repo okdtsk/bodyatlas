@@ -18,7 +18,6 @@ describe('GET /api/account/export', () => {
     await seedTemplate('t1', 'u1', 'Push', ['ex1']);
     const db = getDb(env.DB);
     await db.insert(schema.meals).values({ id: 'm1', userId: 'u1', name: 'Eggs' });
-    await db.insert(schema.apiTokens).values({ id: 'tok1', userId: 'u1', name: 'cli', tokenHash: 'SECRET_HASH' });
     await db.insert(schema.aiSettings).values({
       userId: 'u1', provider: 'claude', model: 'claude-opus-4-8', encryptedKey: 'SECRET_KEY', keyIv: 'SECRET_IV',
     });
@@ -40,11 +39,8 @@ describe('GET /api/account/export', () => {
     expect(data.exercises).toHaveLength(1);
 
     const blob = JSON.stringify(data);
-    expect(blob).not.toContain('SECRET_HASH');
     expect(blob).not.toContain('SECRET_KEY');
     expect(blob).not.toContain('SECRET_IV');
-    expect(data.apiTokens[0]).toMatchObject({ name: 'cli' });
-    expect(data.apiTokens[0]).not.toHaveProperty('tokenHash');
     expect(data.aiSettings).toMatchObject({ provider: 'claude', model: 'claude-opus-4-8' });
   });
 
@@ -78,7 +74,6 @@ describe('DELETE /api/account', () => {
       id: 's1', userId: 'u1', bedAt: new Date('2026-06-01T23:00:00Z'), wokeAt: new Date('2026-06-02T07:00:00Z'),
     });
     await db.insert(schema.bodyMeasurements).values({ id: 'bm1', userId: 'u1', weightKg: 70 });
-    await db.insert(schema.apiTokens).values({ id: 'tok1', userId: 'u1', name: 'cli', tokenHash: 'h' });
     await db.insert(schema.aiSettings).values({ userId: 'u1', provider: 'claude', model: 'm', encryptedKey: 'k', keyIv: 'iv' });
 
     const cookie = await sessionCookieFor('u1');

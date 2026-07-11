@@ -44,12 +44,6 @@ describe('SettingsPage AI section', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
       }
-      if (method === 'GET' && url.pathname === '/api/tokens') {
-        return new Response(JSON.stringify([]), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
       return new Response(JSON.stringify(me), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
