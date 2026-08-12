@@ -428,6 +428,15 @@ textarea.input {
   background: var(--accent);
 }
 
+/* Fill of a horizontal progress bar (kcal/macro bars). Width is set inline
+   per-instance (it's data), everything else lives here so the transition
+   below can be gated by prefers-reduced-motion — inline styles cannot be. */
+.bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
 .delta-up {
   color: var(--positive);
   font-weight: 600;
@@ -528,5 +537,9 @@ textarea.input {
 
   .sheet-panel {
     animation: sheet-in var(--dur-base) var(--ease);
+  }
+
+  .bar-fill {
+    transition: width var(--dur-base) var(--ease);
   }
 }

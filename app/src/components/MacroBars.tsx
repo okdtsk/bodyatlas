@@ -18,15 +18,7 @@ function ProgressBar({ value, target }: ProgressBarProps) {
         minWidth: 48,
       }}
     >
-      <div
-        style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: 'var(--accent)',
-          borderRadius: 2,
-          transition: 'width 0.2s',
-        }}
-      />
+      <div className="bar-fill" style={{ width: `${pct}%` }} />
     </div>
   );
 }

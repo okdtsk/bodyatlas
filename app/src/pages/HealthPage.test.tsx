@@ -92,6 +92,18 @@ describe('HealthPage', () => {
     expect(screen.getByText('No measurement logged.')).toBeInTheDocument();
   });
 
+  it('renders caret icons rather than glyph characters for day navigation', async () => {
+    mockApi({
+      'GET /api/meals': [],
+      'GET /api/sleep': [],
+      'GET /api/measurements': [],
+    });
+    renderHealth();
+    await screen.findByText('No meals logged this day.');
+    expect(document.body.textContent ?? '').not.toMatch(/[▶◀▸◂]/u);
+    expect(screen.getByRole('button', { name: 'next-day' })).toBeInTheDocument();
+  });
+
   it('clicking prev-day fetches with from one day earlier', async () => {
     const spy = mockApi({
       'GET /api/meals': [],
