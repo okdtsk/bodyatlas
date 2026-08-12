@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
+import type { Icon } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router';
 import { useI18n, type MessageKey } from '../i18n';
 import { useStartWorkout } from '../lib/train';
+import { IconMeal, IconSet, IconSleep, IconWeight } from './icons';
 
-const HEALTH_ACTIONS: { key: MessageKey; icon: string; path: string }[] = [
-  { key: 'quickLog.meal', icon: '🍽', path: '/health?add=meal' },
-  { key: 'quickLog.weight', icon: '⚖️', path: '/health?add=weight' },
-  { key: 'quickLog.sleep', icon: '🌙', path: '/health?add=sleep' },
+const HEALTH_ACTIONS: { key: MessageKey; Glyph: Icon; path: string }[] = [
+  { key: 'quickLog.meal', Glyph: IconMeal, path: '/health?add=meal' },
+  { key: 'quickLog.weight', Glyph: IconWeight, path: '/health?add=weight' },
+  { key: 'quickLog.sleep', Glyph: IconSleep, path: '/health?add=sleep' },
 ];
 
 export function QuickLogSheet({ onClose }: { onClose: () => void }) {
@@ -79,10 +81,10 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
             cursor: 'pointer',
           }}
         >
-          <span>🏋️</span>
+          <IconSet size={20} weight="bold" aria-hidden />
           <span>{t('quickLog.set')}</span>
         </button>
-        {HEALTH_ACTIONS.map(({ key, icon, path }) => (
+        {HEALTH_ACTIONS.map(({ key, Glyph, path }) => (
           <button
             key={key}
             onClick={() => { navigate(path); onClose(); }}
@@ -101,7 +103,7 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
               cursor: 'pointer',
             }}
           >
-            <span>{icon}</span>
+            <Glyph size={20} weight="bold" aria-hidden />
             <span>{t(key)}</span>
           </button>
         ))}
