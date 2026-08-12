@@ -3,6 +3,7 @@ import { useI18n } from '../i18n';
 import { Skeleton } from '../components/Skeleton';
 import { formatDay } from '../lib/format';
 import { useActiveWorkout, useStartWorkout, useTemplates, useWorkouts } from '../lib/train';
+import { IconEdit } from '../components/icons';
 
 export function TrainPage() {
   const { t, locale } = useI18n();
@@ -24,16 +25,10 @@ export function TrainPage() {
       <h1>{t('nav.train')}</h1>
 
       {active && (
-        <Link
-          to="/train/session"
-          className="glow-card is-active tappable"
-          style={{ textDecoration: 'none', color: 'var(--text)' }}
-        >
-          <div className="eyebrow">{t('train.inProgress')}</div>
-          <strong style={{ color: 'var(--accent)' }}>{t('train.resume')}</strong>
+        <Link to="/train/session" className="block-accent">
+          <strong style={{ fontSize: 'var(--fs-title)' }}>{t('train.resume')}</strong>
           <div className="muted">
-            {t('train.startedAt')}{' '}
-            {new Date(active.startedAt).toLocaleTimeString()}
+            {t('train.startedAt')} {new Date(active.startedAt).toLocaleTimeString()}
           </div>
         </Link>
       )}
@@ -43,14 +38,20 @@ export function TrainPage() {
           {isFirstRun && (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.train')}</p>
           )}
-          <div className="section-title">{t('train.start')}</div>
-          <div className="row" style={{ flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => begin({})} disabled={start.isPending}>
+          <div className="label">{t('train.start')}</div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: lastWorkoutId ? '1fr 1fr' : '1fr',
+              gap: 'var(--sp-3)',
+            }}
+          >
+            <button className="btn btn-primary btn-lg" onClick={() => begin({})} disabled={start.isPending}>
               {t('train.empty')}
             </button>
             {lastWorkoutId && (
               <button
-                className="btn"
+                className="btn btn-secondary btn-lg"
                 onClick={() => begin({ copyFromWorkoutId: lastWorkoutId })}
                 disabled={start.isPending}
               >
@@ -60,22 +61,21 @@ export function TrainPage() {
           </div>
           {start.isError && <p className="error-text">{t('error.generic')}</p>}
 
-          <div className="section-title">{t('train.fromTemplate')}</div>
           <div className="stack">
             {templatesPending && <Skeleton height={72} count={3} />}
             {templates?.map((tpl) => (
-              <div key={tpl.id} className="glow-card row" style={{ justifyContent: 'space-between' }}>
+              <div key={tpl.id} className="panel row" style={{ justifyContent: 'space-between' }}>
                 <button
-                  className="btn"
-                  style={{ flex: 1, textAlign: 'left', background: 'transparent', border: 'none' }}
+                  className="btn btn-ghost"
+                  style={{ flex: 1, justifyContent: 'flex-start' }}
                   onClick={() => begin({ templateId: tpl.id })}
                   disabled={start.isPending}
                 >
                   <strong>{tpl.name}</strong>
-                  <span className="muted"> · {tpl.templateExercises.length}</span>
+                  <span className="chip">{tpl.templateExercises.length}</span>
                 </button>
-                <Link className="muted" to={`/train/templates/${tpl.id}`}>
-                  {t('common.edit')}
+                <Link className="btn btn-ghost btn-icon" to={`/train/templates/${tpl.id}`} aria-label={t('common.edit')}>
+                  <IconEdit size={20} weight="bold" aria-hidden />
                 </Link>
               </div>
             ))}
@@ -86,7 +86,7 @@ export function TrainPage() {
         </>
       )}
 
-      <div className="section-title">{t('train.recent')}</div>
+      <div className="label">{t('train.recent')}</div>
       <div className="stack">
         {recentPending && <Skeleton height={72} count={3} />}
         {recent?.length === 0 && <p className="muted">{t('train.noWorkouts')}</p>}
@@ -94,20 +94,20 @@ export function TrainPage() {
           <Link
             key={w.id}
             to={`/train/workouts/${w.id}`}
-            className="glow-card tappable"
+            className="panel tappable"
             style={{ textDecoration: 'none', color: 'var(--text)' }}
           >
             <strong>{formatDay(String(w.startedAt), locale)}</strong>
             <div className="muted">
-              {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(' · ')} — <strong>{w.setCount}</strong>{' '}
-              {t('train.sets')}
+              {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(', ')}{' '}
+              <span className="metric" style={{ fontSize: 'var(--fs-label)' }}>{w.setCount}</span> {t('train.sets')}
             </div>
           </Link>
         ))}
       </div>
 
       <Link className="muted" to="/train/exercises">
-        {t('train.browseExercises')} →
+        {t('train.browseExercises')}
       </Link>
     </section>
   );

@@ -68,4 +68,24 @@ describe('TrainPage', () => {
     // setCount is wrapped in <strong>, so match the .muted div's full text content
     expect(screen.getByText((_, el) => el?.className === 'muted' && (el?.textContent ?? '').includes('5') && (el?.textContent ?? '').includes('sets'))).toBeInTheDocument();
   });
+
+  it('uses at most two labels', () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/templates': [],
+      'GET /api/workouts': [],
+    });
+    renderTrain();
+    expect(document.querySelectorAll('.label').length).toBeLessThanOrEqual(2);
+  });
+
+  it('has no uppercase section titles left', () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/templates': [],
+      'GET /api/workouts': [],
+    });
+    renderTrain();
+    expect(document.querySelectorAll('.section-title, .eyebrow').length).toBe(0);
+  });
 });
