@@ -46,34 +46,37 @@ Spec: `docs/superpowers/specs/2026-08-13-bodyatlas-design-overhaul.md`
 
 - [ ] **Step 1: Write the migration**
 
-Create `worker/migrations/0010_theme_modes.sql`:
+Create `worker/migrations/0010_theme_modes.sql` as **data-only**. Do not attempt to change
+the SQL column default.
 
 ```sql
 -- Collapse the three mood themes into light/dark modes.
 UPDATE `users` SET `theme` = 'dark'  WHERE `theme` = 'gym-dark';
 UPDATE `users` SET `theme` = 'light' WHERE `theme` IN ('clinical-light', 'warm-journal');
-
--- SQLite cannot ALTER a column default in place; rebuild via the Drizzle pattern.
-ALTER TABLE `users` RENAME TO `users_old`;
-CREATE TABLE `users` (
-	`id` text PRIMARY KEY NOT NULL,
-	`google_sub` text NOT NULL,
-	`email` text NOT NULL,
-	`locale` text DEFAULT 'en' NOT NULL,
-	`theme` text DEFAULT 'dark' NOT NULL,
-	`unit` text DEFAULT 'kg' NOT NULL,
-	`timezone` text DEFAULT 'UTC' NOT NULL
-);
-INSERT INTO `users` SELECT * FROM `users_old`;
-DROP TABLE `users_old`;
 ```
 
-> Before running this, open `worker/migrations/0000_users.sql` and every later migration that
-> touches `users` (grep: `grep -n "users" worker/migrations/*.sql`). The `CREATE TABLE` above
-> must list the columns as they exist *now*, in order, including any added by migrations
-> 0001-0009 (`target_kcal`, `target_protein_g`, `onboarded_at`, `offline_client_id`, AI key
-> columns, and so on). Copy the current shape from `worker/src/db/schema.ts`. A mismatched
-> column list silently drops user data.
+Follow the UPDATEs with a comment recording why the default is untouched (see below).
+
+> **Do NOT rebuild the table.** SQLite cannot ALTER a default in place, and the usual
+> rebuild is unsafe here. Since SQLite 3.25, `ALTER TABLE users RENAME TO users_old`
+> rewrites the `REFERENCES` clauses of every child table to follow the rename, and 7 tables
+> reference `users.id` (exercises, workouts, templates, meals, sleep_records,
+> body_measurements, ai_settings). They would end up pointing at `users_old`, which the next
+> statement drops. This corrupts an empty database as readily as a populated one, so it
+> would pass tests and break every write in production.
+>
+> The safe `CREATE TABLE __new_users` form needs `PRAGMA foreign_keys=OFF`, which is a no-op
+> inside the transaction Wrangler wraps migrations in. `PRAGMA defer_foreign_keys` only moves
+> the violation to COMMIT, `legacy_alter_table` governs triggers and views rather than FK
+> rewriting, and `d1 execute --file` is transactional too. There is no supported way to
+> rebuild `users` in D1 with child rows present.
+>
+> **The SQL default does not matter.** Drizzle's SQLite dialect binds the schema default as
+> a bound parameter whenever an insert omits the column, and `db.insert(users)` is the only
+> path that creates rows. The `.default('dark')` in `schema.ts` therefore governs every new
+> row while the SQL-level default stays `'gym-dark'` and unreachable. Add a test in
+> `worker/test/db.test.ts` proving it: insert without `theme` against a database whose SQL
+> default is still `gym-dark`, and assert the row reads back `dark`.
 
 - [ ] **Step 2: Apply the migration locally and verify**
 
