@@ -1,46 +1,102 @@
-/* Gym Dark — default */
+/*
+ * Two layers:
+ *   --p-<mode>-*  raw palette. Every hex appears exactly once, in this block.
+ *   semantic      per-theme mapping. Components reference ONLY these.
+ *
+ * Verified by tokens.contrast.test.ts: all 16 pairs clear WCAG AA in both modes.
+ *
+ * The accent splits three ways because lime is a FILL colour, not a TEXT colour.
+ * Text on lime is 13:1; lime as text on white is 1.4:1. In dark mode the three
+ * roles collapse to the same value, which is intentional, so that components
+ * reference one token name and never branch on theme.
+ */
+:root {
+  --p-dark-bg: #0b0d10;
+  --p-dark-surface: #14171c;
+  --p-dark-surface-2: #1d2127;
+  --p-dark-border: #2a3038;
+  --p-dark-border-strong: #646d7a;
+  --p-dark-text: #f0f2f4;
+  --p-dark-muted: #9ba4af;
+  --p-dark-accent: #d8f34e;
+  --p-dark-accent-edge: #d8f34e;
+  --p-dark-accent-ink: #d8f34e;
+  --p-dark-accent-contrast: #0b0d10;
+  --p-dark-positive: #4ade80;
+  --p-dark-negative: #f87171;
+  --p-dark-warning: #fbbf24;
+
+  --p-light-bg: #f3f4f1;
+  --p-light-surface: #ffffff;
+  --p-light-surface-2: #e8eae4;
+  --p-light-border: #d5d9cf;
+  --p-light-border-strong: #767d72;
+  --p-light-text: #14171a;
+  --p-light-muted: #585f66;
+  --p-light-accent: #cbe93c;
+  --p-light-accent-edge: #6f8608;
+  --p-light-accent-ink: #4a6300;
+  --p-light-accent-contrast: #14171a;
+  --p-light-positive: #15803d;
+  --p-light-negative: #b91c1c;
+  --p-light-warning: #a16207;
+}
+
 :root,
-:root[data-theme='gym-dark'] {
-  --bg: #0d0f12;
-  --surface: #16191e;
-  --surface-2: #1e2228;
-  --border: #232830;
-  --text: #e8eaed;
-  --text-muted: #9aa3ad;
-  --accent: #d8f34e;
-  --accent-contrast: #0d0f12;
-  --positive: #4ade80;
-  --negative: #f87171;
-  --radius: 12px;
-  --font-weight-heading: 800;
+:root[data-theme='dark'],
+:root[data-theme='system'] {
+  color-scheme: dark;
+  --bg: var(--p-dark-bg);
+  --surface: var(--p-dark-surface);
+  --surface-2: var(--p-dark-surface-2);
+  --border: var(--p-dark-border);
+  --border-strong: var(--p-dark-border-strong);
+  --text: var(--p-dark-text);
+  --text-muted: var(--p-dark-muted);
+  --accent: var(--p-dark-accent);
+  --accent-edge: var(--p-dark-accent-edge);
+  --accent-ink: var(--p-dark-accent-ink);
+  --accent-contrast: var(--p-dark-accent-contrast);
+  --positive: var(--p-dark-positive);
+  --negative: var(--p-dark-negative);
+  --warning: var(--p-dark-warning);
 }
 
-:root[data-theme='clinical-light'] {
-  --bg: #f7f9fa;
-  --surface: #ffffff;
-  --surface-2: #eef2f5;
-  --border: #e3e8ed;
-  --text: #1a2330;
-  --text-muted: #7a8694;
-  --accent: #3b82c4;
-  --accent-contrast: #ffffff;
-  --positive: #2f9e6e;
-  --negative: #d64545;
-  --radius: 10px;
-  --font-weight-heading: 700;
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: var(--p-light-bg);
+  --surface: var(--p-light-surface);
+  --surface-2: var(--p-light-surface-2);
+  --border: var(--p-light-border);
+  --border-strong: var(--p-light-border-strong);
+  --text: var(--p-light-text);
+  --text-muted: var(--p-light-muted);
+  --accent: var(--p-light-accent);
+  --accent-edge: var(--p-light-accent-edge);
+  --accent-ink: var(--p-light-accent-ink);
+  --accent-contrast: var(--p-light-accent-contrast);
+  --positive: var(--p-light-positive);
+  --negative: var(--p-light-negative);
+  --warning: var(--p-light-warning);
 }
 
-:root[data-theme='warm-journal'] {
-  --bg: #faf6ef;
-  --surface: #ffffff;
-  --surface-2: #efe9df;
-  --border: #e8e0d2;
-  --text: #3d3429;
-  --text-muted: #a39580;
-  --accent: #d98e4a;
-  --accent-contrast: #ffffff;
-  --positive: #7a9b76;
-  --negative: #c26d5a;
-  --radius: 14px;
-  --font-weight-heading: 700;
+/* Same specificity as the dark rule above, but later in source, so it wins. */
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] {
+    color-scheme: light;
+    --bg: var(--p-light-bg);
+    --surface: var(--p-light-surface);
+    --surface-2: var(--p-light-surface-2);
+    --border: var(--p-light-border);
+    --border-strong: var(--p-light-border-strong);
+    --text: var(--p-light-text);
+    --text-muted: var(--p-light-muted);
+    --accent: var(--p-light-accent);
+    --accent-edge: var(--p-light-accent-edge);
+    --accent-ink: var(--p-light-accent-ink);
+    --accent-contrast: var(--p-light-accent-contrast);
+    --positive: var(--p-light-positive);
+    --negative: var(--p-light-negative);
+    --warning: var(--p-light-warning);
+  }
 }
