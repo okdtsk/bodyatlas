@@ -105,4 +105,24 @@ describe('SessionPage', () => {
     renderSession();
     expect(await screen.findByText('TRAIN HOME')).toBeInTheDocument();
   });
+
+  it('renders no glyph characters as buttons', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: activeWorkout },
+      'GET /api/exercises/e1/last-sets': null,
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    expect(document.body.textContent ?? '').not.toMatch(/[✕✖↗↘]/u);
+  });
+
+  it('gives set-logging controls a 48px target', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: activeWorkout },
+      'GET /api/exercises/e1/last-sets': null,
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    expect(screen.getByRole('button', { name: /log set/i })).toHaveClass('btn-lg');
+  });
 });
