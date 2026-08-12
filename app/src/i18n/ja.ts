@@ -81,6 +81,7 @@ export const ja: Record<MessageKey, string> = {
   'field.rpe': 'RPE',
   'field.duration': '分',
   'field.distance': 'km',
+  'field.quality': '睡眠の質',
   'type.strength': 'ウェイト',
   'type.bodyweight': '自重',
   'type.cardio': '有酸素',

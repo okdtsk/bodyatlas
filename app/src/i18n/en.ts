@@ -79,6 +79,7 @@ export const en = {
   'field.rpe': 'RPE',
   'field.duration': 'min',
   'field.distance': 'km',
+  'field.quality': 'Quality',
   'type.strength': 'Strength',
   'type.bodyweight': 'Bodyweight',
   'type.cardio': 'Cardio',
