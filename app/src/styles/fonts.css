@@ -1,0 +1,20 @@
+/*
+ * Archivo (SIL Open Font License 1.1) subset to digits and metric suffixes.
+ * Scoped to numerals on purpose: digits are locale-independent, so EN and JA
+ * render metrics identically. A full-Latin display face would give JA a system
+ * fallback while EN got Archivo, making JA the second-class locale.
+ *
+ * NOTE: the vendored file is the full static Archivo-Bold face (53KB), not a
+ * pre-subset ~<20KB file. The Google Fonts css2 `text=` subsetting API was
+ * unreachable from this environment (curl/wget are denied by the sandbox's
+ * Bash permissions, and WebFetch cannot return exact binary bytes), and
+ * Omnibus-Type/Archivo has no GitHub Releases and no variable woff2 — only
+ * per-weight static woff2 files. See task-3-report.md for what was tried.
+ */
+@font-face {
+  font-family: 'Archivo Metric';
+  src: url('/fonts/archivo-metric.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
