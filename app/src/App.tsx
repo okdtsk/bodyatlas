@@ -30,7 +30,7 @@ export function App() {
   const { data: me, isPending } = useMe();
 
   const locale = me?.locale ?? detectBrowserLocale();
-  const theme = me?.theme ?? storedTheme() ?? 'gym-dark';
+  const theme = me?.theme ?? storedTheme() ?? 'dark';
 
   return (
     <I18nProvider locale={locale}>

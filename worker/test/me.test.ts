@@ -21,7 +21,7 @@ describe('/api/me', () => {
   });
 
   it('returns the signed-in user with preferences', async () => {
-    await seedUser('user-1', { theme: 'warm-journal' });
+    await seedUser('user-1', { theme: 'light' });
     const res = await SELF.fetch('https://example.com/api/me', {
       headers: { Cookie: await sessionCookieFor('user-1') },
     });
@@ -30,7 +30,7 @@ describe('/api/me', () => {
     expect(me).toMatchObject({
       id: 'user-1',
       email: 'user-1@example.com',
-      theme: 'warm-journal',
+      theme: 'light',
       locale: 'en',
     });
     expect(me).not.toHaveProperty('googleSub');

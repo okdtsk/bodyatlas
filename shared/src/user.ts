@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LOCALES = ['en', 'ja'] as const;
-export const THEMES = ['gym-dark', 'clinical-light', 'warm-journal'] as const;
+export const THEMES = ['dark', 'light', 'system'] as const;
 export const UNITS = ['kg'] as const;
 
 export type Locale = (typeof LOCALES)[number];

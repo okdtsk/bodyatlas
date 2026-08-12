@@ -12,7 +12,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'America/New_York',
   targetKcal: 2000,

@@ -23,6 +23,17 @@ export function storedTheme(): Theme | null {
   }
 }
 
+/**
+ * Resolves a stored preference to a concrete rendering mode.
+ * The DOM still carries the raw preference in `data-theme` so CSS can key
+ * `system` off `prefers-color-scheme` directly; this helper is for code that
+ * needs to know which mode is actually showing (charts, meta theme-color).
+ */
+export function resolveTheme(theme: Theme, prefersDark: boolean): 'dark' | 'light' {
+  if (theme === 'system') return prefersDark ? 'dark' : 'light';
+  return theme;
+}
+
 /** Applies `theme` to <html data-theme> whenever it changes. */
 export function ThemeProvider({
   theme,

@@ -8,7 +8,9 @@ export const users = sqliteTable('users', {
   email: text('email').notNull(),
   name: text('name').notNull(),
   locale: text('locale').$type<Locale>().notNull().default('en'),
-  theme: text('theme').$type<Theme>().notNull().default('gym-dark'),
+  // Drizzle binds this default on insert; the SQL-level default is still
+  // 'gym-dark' and unreachable — see migrations/0010_theme_modes.sql.
+  theme: text('theme').$type<Theme>().notNull().default('dark'),
   unit: text('unit').$type<Unit>().notNull().default('kg'),
   timezone: text('timezone').notNull().default('Asia/Tokyo'),
   targetKcal: integer('target_kcal'),

@@ -11,7 +11,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'Asia/Tokyo',
   targetKcal: null,
@@ -55,14 +55,14 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('SettingsPage', () => {
   it('PATCHes /api/me when the theme changes', async () => {
-    const fetchSpy = makeSetup({ theme: 'clinical-light' });
+    const fetchSpy = makeSetup({ theme: 'light' });
 
-    await userEvent.selectOptions(screen.getByLabelText('Theme'), 'clinical-light');
+    await userEvent.selectOptions(screen.getByLabelText('Theme'), 'light');
 
     await waitFor(() => {
       const patchCall = fetchSpy.mock.calls.find(([, init]) => init?.method === 'PATCH');
       expect(patchCall).toBeTruthy();
-      expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ theme: 'clinical-light' });
+      expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ theme: 'light' });
     });
   });
 
