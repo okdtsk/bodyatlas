@@ -10,7 +10,7 @@ const css = readFileSync(resolve(here, 'tokens.css'), 'utf8');
 function palette(mode: 'dark' | 'light'): Record<string, string> {
   const out: Record<string, string> = {};
   const re = new RegExp(`--p-${mode}-([a-z0-9-]+):\\s*(#[0-9a-fA-F]{6})`, 'g');
-  for (const m of css.matchAll(re)) out[m[1]] = m[2].toLowerCase();
+  for (const m of css.matchAll(re)) out[m[1]!] = m[2]!.toLowerCase();
   return out;
 }
 
@@ -18,7 +18,7 @@ function luminance(hex: string): number {
   const ch = [1, 3, 5]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  return 0.2126 * ch[0]! + 0.7152 * ch[1]! + 0.0722 * ch[2]!;
 }
 
 function ratio(fg: string, bg: string): number {
@@ -56,6 +56,6 @@ describe.each(['dark', 'light'] as const)('%s palette', (mode) => {
   });
 
   it.each(PAIRS)('%s on %s clears %s:1 (%s)', (fg, bg, min) => {
-    expect(ratio(p[fg], p[bg])).toBeGreaterThanOrEqual(min);
+    expect(ratio(p[fg]!, p[bg]!)).toBeGreaterThanOrEqual(min);
   });
 });
