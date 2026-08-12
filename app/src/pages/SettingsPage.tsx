@@ -349,7 +349,7 @@ export function SettingsPage() {
             value={aiProvider}
             onChange={(e) => handleProviderChange(e.target.value as AiProvider | '')}
           >
-            <option value="">—</option>
+            <option value="">{t('common.none')}</option>
             {AI_PROVIDERS.map((p) => (
               <option key={p} value={p}>
                 {p}

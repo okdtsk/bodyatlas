@@ -15,3 +15,18 @@ describe('message catalogs', () => {
     }
   });
 });
+
+describe('copy register', () => {
+  it.each([['en', en], ['ja', ja]] as const)('%s uses no em or en dashes', (_name, cat) => {
+    const offenders = Object.entries(cat).filter(([, v]) => /[—–]/.test(v));
+    expect(offenders).toEqual([]);
+  });
+
+  it.each([['en', en], ['ja', ja]] as const)('%s empty states do not exclaim', (_name, cat) => {
+    const offenders = Object.entries(cat).filter(
+      ([k, v]) => (k.startsWith('empty.') || k.endsWith('.noData') || k.endsWith('.noReview')) &&
+        /[!！]/.test(v),
+    );
+    expect(offenders).toEqual([]);
+  });
+});

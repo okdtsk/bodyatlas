@@ -122,7 +122,7 @@ function ExerciseBlock({
 
           {pendingSets.map((op) => (
             <div key={op.id} className="row" style={{ gap: 8, opacity: 0.7 }}>
-              <span>{op.payload.reps != null ? `${String(op.payload.reps)} ${t('field.reps')}` : '—'}</span>
+              <span>{op.payload.reps != null ? `${String(op.payload.reps)} ${t('field.reps')}` : ''}</span>
               <PendingBadge failed={op.status === 'failed'} />
             </div>
           ))}

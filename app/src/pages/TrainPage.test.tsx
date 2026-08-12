@@ -33,7 +33,7 @@ describe('TrainPage', () => {
     renderTrain();
     expect(await screen.findByText('Push Day A')).toBeInTheDocument();
     expect(screen.getByText('Empty workout')).toBeInTheDocument();
-    expect(screen.getByText('No workouts yet — start your first one!')).toBeInTheDocument();
+    expect(screen.getByText('No workouts yet. Log your first one.')).toBeInTheDocument();
   });
 
   it('shows a resume card when a workout is active', async () => {
