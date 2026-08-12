@@ -11,7 +11,7 @@ import { SleepFormSheet } from '../components/SleepFormSheet';
 import { MeasurementFormSheet } from '../components/MeasurementFormSheet';
 import { PendingBadge } from '../components/PendingBadge';
 import { useQueuedOpsByKind } from '../lib/offline/usePendingOps';
-import { IconPrev, IconNext } from '../components/icons';
+import { IconPrev, IconNext, IconStar } from '../components/icons';
 
 type SheetState =
   | null
@@ -39,7 +39,7 @@ function KcalBar({ value, target }: KcalBarProps) {
     <div
       style={{
         background: 'var(--surface-2)',
-        borderRadius: 2,
+        borderRadius: 'var(--radius-sm)',
         height: 4,
         overflow: 'hidden',
         flex: 1,
@@ -211,7 +211,9 @@ export function HealthPage() {
                   {meal.calories} {t('health.calories')}
                 </span>
               )}
-              {meal.isFavorite && <span>★</span>}
+              {meal.isFavorite && (
+                <IconStar size={14} weight="fill" color="var(--accent-ink)" aria-label={t('health.favorite')} />
+              )}
             </div>
           ))}
         </div>
@@ -257,7 +259,21 @@ export function HealthPage() {
                 {formatTime(s.bedAt, locale)} → {formatTime(s.wokeAt, locale)}
               </div>
               {s.quality != null && (
-                <div style={{ marginTop: 4 }}>{'★'.repeat(s.quality)}</div>
+                <div
+                  className="row"
+                  style={{ gap: 2, marginTop: 4 }}
+                  aria-label={`${t('field.quality')}: ${s.quality}/5`}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <IconStar
+                      key={n}
+                      size={14}
+                      weight={n <= s.quality! ? 'fill' : 'regular'}
+                      color={n <= s.quality! ? 'var(--accent-ink)' : 'var(--text-muted)'}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
               )}
             </div>
           ))}

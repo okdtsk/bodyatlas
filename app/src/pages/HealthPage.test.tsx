@@ -76,8 +76,8 @@ describe('HealthPage', () => {
     expect(screen.getByText('Protein Shake')).toBeInTheDocument();
     // Summed kcal: 480 + 650 = 1130
     expect(screen.getByText(/1,?130/)).toBeInTheDocument();
-    // Favorite star for meal2
-    expect(screen.getAllByText('★').length).toBeGreaterThan(0);
+    // Favorite marker for meal2 (accessible IconStar, not a glyph)
+    expect(screen.getAllByLabelText('Favorite').length).toBeGreaterThan(0);
   });
 
   it('shows empty-state strings when no data for the day', async () => {

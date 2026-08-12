@@ -11,7 +11,7 @@ function ProgressBar({ value, target }: ProgressBarProps) {
     <div
       style={{
         background: 'var(--surface-2)',
-        borderRadius: 2,
+        borderRadius: 'var(--radius-sm)',
         height: 4,
         overflow: 'hidden',
         flex: 1,
