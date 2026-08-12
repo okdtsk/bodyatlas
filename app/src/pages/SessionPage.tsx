@@ -57,22 +57,29 @@ function ExerciseBlock({
   // onSuccess payload because useLogSet resolves through an offline fallback when the
   // browser is offline, which returns { queued: true; id } instead of the created set.
   // The mount guard skips the first render so sets already present when the screen opens
-  // never flash; only a set count increase after that (an actual new log) triggers it.
+  // never flash. The dependency is the id list itself (not just the count) and the flash only
+  // fires when the last set's id was not already present a moment ago - a delete shrinks the
+  // list without introducing a new id, so the set it promotes to "last" is correctly left alone.
   const [justLogged, setJustLogged] = useState<string | null>(null);
   const mounted = useRef(false);
-  const setCount = we.sets.length;
+  const prevIds = useRef<Set<string>>(new Set());
+  const idsKey = we.sets.map((s) => s.id).join(',');
   useEffect(() => {
+    const currentIds = new Set(we.sets.map((s) => s.id));
     if (!mounted.current) {
       mounted.current = true;
+      prevIds.current = currentIds;
       return;
     }
     const newest = we.sets[we.sets.length - 1];
-    if (!newest) return;
+    const isNewAppend = newest != null && !prevIds.current.has(newest.id);
+    prevIds.current = currentIds;
+    if (!isNewAppend) return;
     setJustLogged(newest.id);
     const timer = setTimeout(() => setJustLogged(null), 180);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setCount]);
+  }, [idsKey]);
 
   const state = isActive ? 'active' : isUpNext ? 'muted' : undefined;
 
