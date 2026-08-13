@@ -264,6 +264,11 @@ button {
   color: var(--text-muted);
 }
 
+.chip-accent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
 .error-text {
   color: var(--negative);
   font-size: var(--fs-label);

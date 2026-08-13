@@ -119,16 +119,7 @@ export function HealthPage() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 700 }}>{formatDay(selectedDate.toISOString(), locale)}</div>
           {isToday(selectedDate) && (
-            <span
-              style={{
-                fontSize: 11,
-                background: 'var(--accent)',
-                color: 'var(--accent-contrast)',
-                borderRadius: 8,
-                padding: '1px 7px',
-                fontWeight: 600,
-              }}
-            >
+            <span className="chip chip-accent" style={{ fontWeight: 600 }}>
               {t('health.today')}
             </span>
           )}
@@ -172,7 +163,7 @@ export function HealthPage() {
         <div className="label" style={{ margin: 0 }}>{t('health.meals')}</div>
         <button
           className="btn btn-primary"
-          style={{ fontSize: 13, padding: '5px 12px' }}
+          style={{ fontSize: 'var(--fs-label)', padding: '5px 12px' }}
           onClick={() => setOpenSheet({ kind: 'meal' })}
         >
           {t('health.addMeal')}
@@ -228,7 +219,7 @@ export function HealthPage() {
           <p className="muted">{t('health.noSleep')}</p>
           <button
             className="btn"
-            style={{ fontSize: 13, padding: '5px 12px', marginTop: 6 }}
+            style={{ fontSize: 'var(--fs-label)', padding: '5px 12px', marginTop: 6 }}
             onClick={() => setOpenSheet({ kind: 'sleep' })}
           >
             {t('health.addSleep')}
@@ -252,7 +243,7 @@ export function HealthPage() {
               className="panel tappable"
               onClick={() => setOpenSheet({ kind: 'sleep', editing: s })}
             >
-              <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
+              <div className="metric" style={{ marginBottom: 'var(--sp-1)' }}>
                 {sleepDurationLabel(s.bedAt, s.wokeAt)}
               </div>
               <div className="muted">
@@ -289,7 +280,7 @@ export function HealthPage() {
           <p className="muted">{t('health.noMeasurement')}</p>
           <button
             className="btn"
-            style={{ fontSize: 13, padding: '5px 12px', marginTop: 6 }}
+            style={{ fontSize: 'var(--fs-label)', padding: '5px 12px', marginTop: 6 }}
             onClick={() => setOpenSheet({ kind: 'measurement' })}
           >
             {t('health.addMeasurement')}
@@ -322,7 +313,7 @@ export function HealthPage() {
               {m.weightKg != null && (
                 <div>
                   <div className="label">{t('health.weight')}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>{m.weightKg}</div>
+                  <div className="metric">{m.weightKg}</div>
                 </div>
               )}
               {m.bodyFatPct != null && (
