@@ -100,6 +100,7 @@ describe('HealthPage', () => {
     });
     renderHealth();
     await screen.findByText('No meals logged this day.');
+    // deslop-ignore-next-line 15 -- asserts absence of glyph characters, not an instance of one
     expect(document.body.textContent ?? '').not.toMatch(/[▶◀▸◂]/u);
     expect(screen.getByRole('button', { name: 'next-day' })).toBeInTheDocument();
   });

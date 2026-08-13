@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LOCALES, THEMES, type UpdateMe } from '@bodyatlas/shared';
-import { api } from '../lib/api';
 import { useI18n, type MessageKey } from '../i18n';
-import type { Me } from '../lib/useMe';
+import { useUpdateMe, type Me } from '../lib/useMe';
 
 export function OnboardingWizard({ me }: { me: Me }) {
   const { t } = useI18n();
-  const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [theme, setTheme] = useState(me.theme);
   const [locale, setLocale] = useState(me.locale);
@@ -16,16 +13,7 @@ export function OnboardingWizard({ me }: { me: Me }) {
   const [fat, setFat] = useState(me.targetFatG != null ? String(me.targetFatG) : '');
   const [carbs, setCarbs] = useState(me.targetCarbsG != null ? String(me.targetCarbsG) : '');
 
-  const update = useMutation({
-    mutationFn: async (patch: UpdateMe) => {
-      const res = await api.me.$patch({ json: patch });
-      if (!res.ok) throw new Error(`PATCH /api/me failed: ${res.status}`);
-      return res.json();
-    },
-    onSuccess: (updated) => {
-      qc.setQueryData(['me'], updated);
-    },
-  });
+  const update = useUpdateMe();
 
   const num = (s: string) => (s.trim() === '' ? null : Number(s));
   const finish = (withPrefs: boolean) => {

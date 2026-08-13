@@ -31,6 +31,7 @@ describe('legacy design system', () => {
   it.each([
     ['glow-card', /className=["'`][^"'`]*\bglow-card\b/],
     ['card (superseded by panel)', /className=["'`][^"'`]*\bcard\b(?![-\w])/],
+    // deslop-ignore-next-line 10 -- forbidden-class pattern, not an instance of the class
     ['eyebrow', /className=["'`][^"'`]*\beyebrow\b/],
     ['section-title', /className=["'`][^"'`]*\bsection-title\b/],
   ])('no file still uses %s', (_label, pattern) => {

@@ -86,6 +86,7 @@ describe('TrainPage', () => {
       'GET /api/workouts': [],
     });
     renderTrain();
+    // deslop-ignore-next-line 10 -- asserts absence of the legacy class, not an instance of it
     expect(document.querySelectorAll('.section-title, .eyebrow').length).toBe(0);
   });
 });

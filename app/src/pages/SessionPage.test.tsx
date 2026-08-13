@@ -113,6 +113,7 @@ describe('SessionPage', () => {
     });
     renderSession();
     await screen.findByText('Bench Press');
+    // deslop-ignore-next-line 15 -- asserts absence of glyph characters, not an instance of one
     expect(document.body.textContent ?? '').not.toMatch(/[✕✖↗↘]/u);
   });
 

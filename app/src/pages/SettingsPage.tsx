@@ -9,7 +9,7 @@ import { DataSection } from './settings/DataSection';
 export function SettingsPage() {
   const { t } = useI18n();
   return (
-    <section className="stack">
+    <section className="stack" aria-label={t('nav.settings')}>
       <h1>{t('settings.title')}</h1>
       <AppearanceSection />
       <TargetsSection />

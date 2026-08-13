@@ -117,7 +117,8 @@ button {
   bottom: 84px;
   width: 56px;
   height: 56px;
-  border-radius: 50%; /* the one full-round element, per the shape rule */
+  /* deslop-ignore-next-line 19 -- the one documented full-round exception, per the shape rule */
+  border-radius: 50%;
   border: 1px solid var(--accent-edge);
   background: var(--accent);
   color: var(--accent-contrast);
@@ -567,6 +568,7 @@ textarea.input {
   }
 
   .bar-fill {
+    /* deslop-ignore-next-line 26 -- discrete, gated width transition on chart bars (not hover); standard ease, no overshoot */
     transition: width var(--dur-base) var(--ease);
   }
 }
