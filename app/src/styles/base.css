@@ -451,6 +451,28 @@ textarea.input {
   color: var(--text-muted);
 }
 
+.login-main {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  text-align: center;
+}
+
+.login-title {
+  font-size: var(--fs-metric-l);
+  letter-spacing: -0.02em;
+}
+
+.onboarding-main {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: var(--sp-5);
+}
+
 .session-header {
   position: sticky;
   top: 0;

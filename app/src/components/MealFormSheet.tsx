@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
+import { IconSparkle, IconStar } from './icons';
 import { parseDecimal, toLocalInputValue } from '../lib/format';
 import {
   useCreateMeal,
@@ -143,7 +144,7 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
         aria-label={isCreate ? t('health.addMeal') : t('common.edit')}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Name field with autocomplete and ✨ estimate */}
+        {/* Name field with autocomplete and AI estimate */}
         <label className="stack" style={{ gap: 4, position: 'relative' }}>
           {t('health.mealName')}
           <div className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -170,7 +171,11 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
                 onClick={handleEstimate}
                 style={{ whiteSpace: 'nowrap' }}
               >
-                {estimateMeal.isPending ? t('ai.estimating') : `✨ ${t('ai.estimate')}`}
+                {estimateMeal.isPending ? (
+                  t('ai.estimating')
+                ) : (
+                  <><IconSparkle size={18} weight="fill" aria-hidden /> {t('ai.estimate')}</>
+                )}
               </button>
             )}
           </div>
@@ -179,7 +184,7 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
               {suggestions.map((s) => (
                 <div
                   key={s.id}
-                  className="card tappable row"
+                  className="panel tappable row"
                   style={{ justifyContent: 'space-between', cursor: 'pointer' }}
                 >
                   <button
@@ -203,7 +208,12 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
                     }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                   >
-                    {s.isFavorite ? '★' : '☆'}
+                    <IconStar
+                      size={16}
+                      weight={s.isFavorite ? 'fill' : 'regular'}
+                      color={s.isFavorite ? 'var(--accent-ink)' : 'var(--text-muted)'}
+                      aria-hidden
+                    />
                   </button>
                 </div>
               ))}
@@ -286,7 +296,7 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
             <button
               type="button"
               className="btn"
-              style={{ marginLeft: 'auto', color: 'var(--error)' }}
+              style={{ marginLeft: 'auto', color: 'var(--negative)' }}
               disabled={isBusy}
               onClick={handleDelete}
             >

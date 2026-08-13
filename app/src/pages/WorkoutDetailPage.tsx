@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useI18n } from '../i18n';
+import { IconClose } from '../components/icons';
 import { SetInputRow } from '../components/SetInputRow';
 import { Skeleton } from '../components/Skeleton';
 import { exerciseName, formatDay, formatSet, toLocalInputValue, trimNum } from '../lib/format';
@@ -21,7 +22,7 @@ function DetailExercise({ workoutId, we }: { workoutId: string; we: Detail['work
   const deleteSet = useDeleteSet(workoutId, we.id);
 
   return (
-    <div className="glow-card stack">
+    <div className="panel stack">
       <strong>{exerciseName(we.exercise, locale)}</strong>
       {we.sets.map((s) =>
         editingSetId === s.id ? (
@@ -52,8 +53,12 @@ function DetailExercise({ workoutId, we }: { workoutId: string; we: Detail['work
                 <button className="btn" aria-label={`edit-set-${s.position}`} onClick={() => setEditingSetId(s.id)}>
                   {t('common.edit')}
                 </button>
-                <button className="btn" aria-label={`delete-set-${s.position}`} onClick={() => deleteSet.mutate(s.id)}>
-                  ✕
+                <button
+                  className="btn btn-ghost btn-icon"
+                  aria-label={`delete-set-${s.position}`}
+                  onClick={() => deleteSet.mutate(s.id)}
+                >
+                  <IconClose size={18} weight="bold" aria-hidden />
                 </button>
               </span>
             </div>

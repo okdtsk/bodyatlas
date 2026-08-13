@@ -18,15 +18,10 @@ export function ExerciseHistoryPage() {
       {isPending && <Skeleton height={72} count={3} />}
       {workouts?.length === 0 && <p className="muted">{t('train.noWorkouts')}</p>}
       {workouts?.map((w) => (
-        <Link
-          key={w.id}
-          to={`/train/workouts/${w.id}`}
-          className="glow-card tappable"
-          style={{ textDecoration: 'none', color: 'var(--text)' }}
-        >
+        <Link key={w.id} to={`/train/workouts/${w.id}`} className="panel tappable">
           <strong>{formatDay(String(w.startedAt), locale)}</strong>
           <div className="muted">
-            {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(' · ')} — {w.setCount}{' '}
+            {(locale === 'ja' ? w.exerciseNamesJa : w.exerciseNames).join(' · ')} · {w.setCount}{' '}
             {t('train.sets')}
           </div>
         </Link>

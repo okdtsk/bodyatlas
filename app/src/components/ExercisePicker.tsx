@@ -62,7 +62,7 @@ export function ExercisePicker({
               {exercises?.map((ex) => (
                 <button
                   key={ex.id}
-                  className="card tappable row"
+                  className="panel tappable row"
                   style={{ justifyContent: 'space-between', textAlign: 'left' }}
                   onClick={() => onSelect(ex)}
                 >

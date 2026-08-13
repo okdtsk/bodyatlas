@@ -24,7 +24,7 @@ export function ExercisesPage() {
       <div className="stack" style={{ gap: 4 }}>
         {isPending && <Skeleton height={72} count={3} />}
         {exercises?.map((ex) => (
-          <div key={ex.id} className="glow-card row" style={{ justifyContent: 'space-between' }}>
+          <div key={ex.id} className="panel row" style={{ justifyContent: 'space-between' }}>
             <Link to={`/train/exercises/${ex.id}`} style={{ color: 'var(--text)', textDecoration: 'none', flex: 1 }}>
               <strong>{exerciseName(ex, locale)}</strong>
               <div className="muted">

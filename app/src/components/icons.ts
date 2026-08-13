@@ -21,6 +21,8 @@ export {
   X as IconClose,
   CaretLeft as IconPrev,
   CaretRight as IconNext,
+  CaretUp as IconMoveUp,
+  CaretDown as IconMoveDown,
   Sparkle as IconSparkle,
   Star as IconStar,
   TrendUp as IconTrendUp,

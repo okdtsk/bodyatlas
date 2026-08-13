@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { UpdateMe } from '@bodyatlas/shared';
+import { LOCALES, THEMES, type UpdateMe } from '@bodyatlas/shared';
 import { api } from '../lib/api';
-import { useI18n } from '../i18n';
+import { useI18n, type MessageKey } from '../i18n';
 import type { Me } from '../lib/useMe';
 
 export function OnboardingWizard({ me }: { me: Me }) {
@@ -43,38 +43,44 @@ export function OnboardingWizard({ me }: { me: Me }) {
 
   const LAST = 3;
   return (
-    <main
-      style={{
-        maxWidth: 440,
-        margin: '0 auto',
-        padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-      }}
-    >
+    <main className="onboarding-main stack">
       {step === 0 && (
         <>
           <h1>{t('onboarding.welcome')}</h1>
-          <p>{t('onboarding.welcomeBody')}</p>
+          <p className="muted">{t('onboarding.welcomeBody')}</p>
         </>
       )}
       {step === 1 && (
         <>
           <h2>{t('onboarding.prefsTitle')}</h2>
-          <label>
-            {t('settings.theme')}
-            <select value={theme} onChange={(e) => setTheme(e.target.value as Me['theme'])}>
-              <option value="gym-dark">Gym Dark</option>
-              <option value="clinical-light">Clinical Light</option>
-              <option value="warm-journal">Warm Journal</option>
-            </select>
-          </label>
-          <label>
-            {t('settings.language')}
-            <select value={locale} onChange={(e) => setLocale(e.target.value as Me['locale'])}>
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
+          <div className="field">
+            <span className="label">{t('settings.theme')}</span>
+            <div className="segmented" role="group" aria-label={t('settings.theme')}>
+              {THEMES.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={theme === v}
+                  onClick={() => setTheme(v)}
+                >
+                  {t(`settings.theme.${v}` as MessageKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="field">
+            <span className="label">{t('settings.language')}</span>
+            <select
+              className="input"
+              aria-label={t('settings.language')}
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as Me['locale'])}
+            >
+              {LOCALES.map((v) => (
+                <option key={v} value={v}>
+                  {t(`settings.language.${v}` as MessageKey)}
+                </option>
+              ))}
             </select>
           </label>
         </>
@@ -82,47 +88,54 @@ export function OnboardingWizard({ me }: { me: Me }) {
       {step === 2 && (
         <>
           <h2>{t('onboarding.targetsTitle')}</h2>
-          <input
-            placeholder="kcal"
-            inputMode="numeric"
-            value={kcal}
-            onChange={(e) => setKcal(e.target.value)}
-          />
-          <input
-            placeholder="P"
-            inputMode="numeric"
-            value={protein}
-            onChange={(e) => setProtein(e.target.value)}
-          />
-          <input
-            placeholder="F"
-            inputMode="numeric"
-            value={fat}
-            onChange={(e) => setFat(e.target.value)}
-          />
-          <input
-            placeholder="C"
-            inputMode="numeric"
-            value={carbs}
-            onChange={(e) => setCarbs(e.target.value)}
-          />
+          <div className="row">
+            <input
+              className="input input-num"
+              placeholder="kcal"
+              inputMode="numeric"
+              value={kcal}
+              onChange={(e) => setKcal(e.target.value)}
+            />
+            <input
+              className="input input-num"
+              placeholder="P"
+              inputMode="numeric"
+              value={protein}
+              onChange={(e) => setProtein(e.target.value)}
+            />
+            <input
+              className="input input-num"
+              placeholder="F"
+              inputMode="numeric"
+              value={fat}
+              onChange={(e) => setFat(e.target.value)}
+            />
+            <input
+              className="input input-num"
+              placeholder="C"
+              inputMode="numeric"
+              value={carbs}
+              onChange={(e) => setCarbs(e.target.value)}
+            />
+          </div>
         </>
       )}
       {step === 3 && (
         <>
           <h2>{t('onboarding.timezoneTitle')}</h2>
-          <p>{me.timezone}</p>
+          <p className="muted">{me.timezone}</p>
         </>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="row">
         <button
           type="button"
+          className="btn btn-primary"
           disabled={update.isPending}
           onClick={() => (step < LAST ? setStep(step + 1) : finish(true))}
         >
           {step < LAST ? t('onboarding.next') : t('onboarding.finish')}
         </button>
-        <button type="button" disabled={update.isPending} onClick={() => finish(false)}>
+        <button type="button" className="btn" disabled={update.isPending} onClick={() => finish(false)}>
           {t('onboarding.skip')}
         </button>
       </div>
