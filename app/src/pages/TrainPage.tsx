@@ -21,11 +21,11 @@ export function TrainPage() {
     start.mutate(input, { onSuccess: () => navigate('/train/session') });
 
   return (
-    <section className="stack">
+    <section className="stack" aria-label={t('nav.train')}>
       <h1>{t('nav.train')}</h1>
 
       {active && (
-        <Link to="/train/session" className="block-accent">
+        <Link to="/train/session" className="block-accent rise-in">
           <strong style={{ fontSize: 'var(--fs-title)' }}>{t('train.resume')}</strong>
           <div className="muted">
             {t('train.startedAt')} {new Date(active.startedAt).toLocaleTimeString()}

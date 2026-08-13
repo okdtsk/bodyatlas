@@ -43,7 +43,7 @@ export function OnboardingWizard({ me }: { me: Me }) {
           <h2>{t('onboarding.prefsTitle')}</h2>
           <div className="field">
             <span className="label">{t('settings.theme')}</span>
-            <div className="segmented" role="group" aria-label={t('settings.theme')}>
+            <div className="segmented" role="group" aria-label={t('settings.theme')} style={{ alignSelf: 'start' }}>
               {THEMES.map((v) => (
                 <button
                   key={v}

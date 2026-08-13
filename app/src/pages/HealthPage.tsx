@@ -106,7 +106,7 @@ export function HealthPage() {
     pendingMeasurements.length === 0;
 
   return (
-    <section>
+    <section aria-label={t('nav.health')}>
       {/* Day navigation header */}
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
         <button

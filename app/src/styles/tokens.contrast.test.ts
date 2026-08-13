@@ -40,6 +40,7 @@ const PAIRS: [string, string, number, string][] = [
   ['accent-ink', 'bg', 4.5, 'accent as text or stroke on the page'],
   ['positive', 'surface', 4.5, 'positive delta text'],
   ['negative', 'surface', 4.5, 'error text'],
+  ['negative-contrast', 'negative', 4.5, 'label on a negative fill'],
   ['warning', 'surface', 4.5, 'warning text'],
   ['border-strong', 'surface', 3, 'input boundary on a panel (WCAG 1.4.11)'],
   ['border-strong', 'bg', 3, 'input boundary on the page (WCAG 1.4.11)'],

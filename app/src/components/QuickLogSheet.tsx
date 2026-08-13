@@ -34,52 +34,22 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('quickLog.title')}
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'flex-end',
-        zIndex: 20,
-      }}
-    >
+    <div className="sheet-backdrop" onClick={onClose}>
       <div
+        className="sheet-panel stack"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('quickLog.title')}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--surface)',
-          borderRadius: 'var(--radius) var(--radius) 0 0',
-          borderTop: '2px solid var(--accent)',
-          padding: 16,
-          width: '100%',
-          maxWidth: 480,
-          margin: '0 auto',
-        }}
       >
-        <h2 style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--text-muted)' }}>
+        <h2 className="label" style={{ margin: 0 }}>
           {t('quickLog.title')}
         </h2>
         <button
+          className="btn btn-secondary"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
           onClick={logSet}
           disabled={start.isPending}
-          style={{
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            width: '100%',
-            padding: 12,
-            marginBottom: 8,
-            background: 'var(--surface-2)',
-            border: 'none',
-            borderRadius: 'var(--radius)',
-            color: 'var(--text)',
-            textAlign: 'left',
-            cursor: 'pointer',
-          }}
         >
           <IconSet size={20} weight="bold" aria-hidden />
           <span>{t('quickLog.set')}</span>
@@ -87,21 +57,9 @@ export function QuickLogSheet({ onClose }: { onClose: () => void }) {
         {HEALTH_ACTIONS.map(({ key, Glyph, path }) => (
           <button
             key={key}
+            className="btn btn-secondary"
+            style={{ width: '100%', justifyContent: 'flex-start' }}
             onClick={() => { navigate(path); onClose(); }}
-            style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-              width: '100%',
-              padding: 12,
-              marginBottom: 8,
-              background: 'var(--surface-2)',
-              border: 'none',
-              borderRadius: 'var(--radius)',
-              color: 'var(--text)',
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
           >
             <Glyph size={20} weight="bold" aria-hidden />
             <span>{t(key)}</span>

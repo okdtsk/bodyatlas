@@ -348,7 +348,7 @@ button {
 }
 
 .segmented button {
-  min-height: 36px;
+  min-height: var(--tap-min);
   padding: 0 var(--sp-3);
   border: none;
   background: transparent;

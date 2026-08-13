@@ -160,7 +160,7 @@ export function TrendsPage() {
     sleepRecords.length === 0;
 
   return (
-    <section style={{ padding: '16px 16px 80px' }}>
+    <section aria-label={t('nav.trends')} style={{ padding: '16px 16px 80px' }}>
       {/* Coach card */}
       <div className="panel" style={{ marginBottom: 20 }}>
         <div className="label" style={{ marginBottom: 'var(--sp-2)' }}>{t('ai.review')}</div>

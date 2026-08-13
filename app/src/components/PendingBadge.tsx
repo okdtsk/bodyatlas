@@ -6,7 +6,7 @@ export function PendingBadge({ failed = false }: { failed?: boolean }) {
   return (
     <span
       className="chip"
-      style={failed ? { background: 'var(--negative)', color: 'var(--accent-contrast)' } : undefined}
+      style={failed ? { background: 'var(--negative)', color: 'var(--negative-contrast)' } : undefined}
     >
       {failed ? t('offline.failed') : t('offline.pending')}
     </span>
