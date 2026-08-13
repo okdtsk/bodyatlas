@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
@@ -54,10 +54,20 @@ function makeSetup(responseOverride?: Record<string, unknown>) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SettingsPage', () => {
+  it('offers the three theme modes', () => {
+    makeSetup();
+
+    const group = screen.getByRole('group', { name: /theme/i });
+    for (const name of [/dark/i, /light/i, /system/i]) {
+      expect(within(group).getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
   it('PATCHes /api/me when the theme changes', async () => {
     const fetchSpy = makeSetup({ theme: 'light' });
 
-    await userEvent.selectOptions(screen.getByLabelText('Theme'), 'light');
+    const group = screen.getByRole('group', { name: /theme/i });
+    await userEvent.click(within(group).getByRole('button', { name: /light/i }));
 
     await waitFor(() => {
       const patchCall = fetchSpy.mock.calls.find(([, init]) => init?.method === 'PATCH');
