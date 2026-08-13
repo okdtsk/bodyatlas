@@ -142,6 +142,7 @@ export const ja: Record<MessageKey, string> = {
   'settings.targetProtein': 'タンパク質 (g)',
   'settings.targetFat': '脂質 (g)',
   'settings.targetCarbs': '炭水化物 (g)',
+  'trends.range': '期間',
   'trends.range.4w': '4週',
   'trends.range.12w': '12週',
   'trends.range.6m': '6ヶ月',

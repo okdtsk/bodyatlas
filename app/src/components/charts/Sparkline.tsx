@@ -17,7 +17,7 @@ export function Sparkline({ points }: { points: Array<{ x: number; y: number }> 
     <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img">
       <polyline
         fill="none"
-        stroke="var(--accent)"
+        stroke="var(--accent-ink)"
         strokeWidth={2}
         strokeLinecap="round"
         points={points.map((p) => `${sx(p.x)},${sy(p.y)}`).join(' ')}

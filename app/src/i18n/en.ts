@@ -140,6 +140,7 @@ export const en = {
   'settings.targetProtein': 'Protein (g)',
   'settings.targetFat': 'Fat (g)',
   'settings.targetCarbs': 'Carbs (g)',
+  'trends.range': 'Date range',
   'trends.range.4w': '4w',
   'trends.range.12w': '12w',
   'trends.range.6m': '6m',
