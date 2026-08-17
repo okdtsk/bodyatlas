@@ -83,6 +83,69 @@ describe('/api/exercises', () => {
     expect(created.nameJa).toBeNull();
   });
 
+  it('refuses a name that already resolves to an existing exercise', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'barbell bench press', type: 'strength', muscleGroup: 'chest', equipment: 'barbell' }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('duplicate');
+    expect(body.error.message).toMatch(/Barbell Bench Press/);
+  });
+
+  it('refuses a partial name that resolves to exactly one exercise', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'hack squat', type: 'strength', muscleGroup: 'legs', equipment: 'machine' }),
+    });
+    expect(res.status).toBe(409);
+  });
+
+  it('refuses a Japanese name that collides with an existing exercise', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Flat Barbell Press',
+        nameJa: 'ベンチプレス',
+        type: 'strength',
+        muscleGroup: 'chest',
+        equipment: 'barbell',
+      }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { message: string } };
+    expect(body.error.message).toMatch(/Barbell Bench Press/);
+  });
+
+  it('allows a name that is ambiguous rather than resolving to one exercise', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Squat', type: 'strength', muscleGroup: 'legs', equipment: 'barbell' }),
+    });
+    expect(res.status).toBe(201);
+  });
+
+  it('does not let another user’s custom exercise block a name', async () => {
+    const headers = await authed();
+    await seedUser('user-2');
+    await seedCustomExercise('theirs', 'user-2', { nameEn: 'Zercher Carry' });
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Zercher Carry', type: 'strength', muscleGroup: 'full-body', equipment: 'barbell' }),
+    });
+    expect(res.status).toBe(201);
+  });
+
   it('archives own custom exercise but rejects patching seed rows', async () => {
     const headers = await authed();
     await seedCustomExercise('mine', 'user-1');

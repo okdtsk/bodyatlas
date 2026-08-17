@@ -3,12 +3,20 @@ import { createExerciseSchema, updateExerciseSchema } from '@bodyatlas/shared';
 import { and, asc, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema } from '../db';
+import { findExerciseConflict, loadExerciseCatalog } from '../lib/exercises';
 import { likeContains } from '../lib/sql';
 import type { ProtectedEnv } from '../types';
 
 const validationError = (issues: unknown) =>
   ({ error: { code: 'validation', message: 'Invalid request body', details: issues } }) as const;
 const notFound = { error: { code: 'not_found', message: 'Exercise not found' } } as const;
+const duplicate = (existingName: string) =>
+  ({
+    error: {
+      code: 'duplicate',
+      message: `That name already resolves to the existing exercise "${existingName}"`,
+    },
+  }) as const;
 
 export const exercisesRoutes = new Hono<ProtectedEnv>()
   .get('/', async (c) => {
@@ -41,6 +49,13 @@ export const exercisesRoutes = new Hono<ProtectedEnv>()
     async (c) => {
       const input = c.req.valid('json');
       const db = getDb(c.env.DB);
+
+      // Same duplicate rule as the MCP create_exercise tool: a row whose name
+      // already resolves would split one movement's history across two rows.
+      const catalog = await loadExerciseCatalog(db, c.get('userId'));
+      const conflict = findExerciseConflict(catalog, [input.name, input.nameJa]);
+      if (conflict) return c.json(duplicate(conflict.nameEn), 409);
+
       const id = crypto.randomUUID();
       await db.insert(schema.exercises).values({
         id,

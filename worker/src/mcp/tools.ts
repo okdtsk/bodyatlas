@@ -6,9 +6,14 @@
  */
 import { EQUIPMENT, EXERCISE_TYPES, MUSCLE_GROUPS } from '@bodyatlas/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { and, asc, desc, eq, gte, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lt, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb, schema } from '../db';
+import {
+  findExerciseConflict,
+  loadExerciseCatalog,
+  visibleExercises,
+} from '../lib/exercises';
 import { likeContains } from '../lib/sql';
 import { dayWindowFor, strengthSeries } from '../lib/stats';
 import { matchExercise, type ExerciseCandidate } from './match';
@@ -160,29 +165,6 @@ function formatSet(s: {
   const reps = s.reps !== null ? `${s.reps}` : '-';
   const rpe = s.rpe !== null ? ` @${s.rpe}` : '';
   return `${weight}${reps}${rpe}`;
-}
-
-/** Exercises the user may log against: the seed catalog plus their own, unarchived. */
-const visibleExercises = (userId: string) =>
-  and(
-    or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
-    eq(schema.exercises.isArchived, false),
-  );
-
-/** Load the whole visible catalog once, so matching can be done in memory. */
-async function loadExerciseCatalog(
-  db: ReturnType<typeof getDb>,
-  userId: string,
-): Promise<ExerciseCandidate[]> {
-  return db
-    .select({
-      id: schema.exercises.id,
-      nameEn: schema.exercises.nameEn,
-      nameJa: schema.exercises.nameJa,
-    })
-    .from(schema.exercises)
-    .where(visibleExercises(userId))
-    .orderBy(asc(schema.exercises.nameEn));
 }
 
 const RECOVERY_HINT =
@@ -432,17 +414,13 @@ export async function createExercise(
   const db = getDb(d1);
 
   // Refuse a name that already resolves — a near-duplicate row would silently
-  // split the user's strength history across two exercises. Both names are
-  // checked, since either one is enough to make the new row a duplicate.
+  // split the user's strength history across two exercises.
   const catalog = await loadExerciseCatalog(db, userId);
-  for (const candidateName of [input.name, input.nameJa]) {
-    if (!candidateName) continue;
-    const existing = matchExercise(catalog, candidateName);
-    if (existing.kind === 'match') {
-      throw new ToolError(
-        `"${candidateName}" already resolves to the existing exercise "${existing.exercise.nameEn}". Log against that instead.`,
-      );
-    }
+  const conflict = findExerciseConflict(catalog, [input.name, input.nameJa]);
+  if (conflict) {
+    throw new ToolError(
+      `"${input.name}" already resolves to the existing exercise "${conflict.nameEn}". Log against that instead.`,
+    );
   }
 
   const id = crypto.randomUUID();
