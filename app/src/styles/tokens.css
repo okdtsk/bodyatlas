@@ -1,15 +1,23 @@
 /*
  * Two layers:
  *   --p-<mode>-*  raw palette, defined here and referenced by name below. A few
- *                 roles intentionally share a value (accent-contrast is the page ink).
+ *                 roles intentionally share a value: accent-contrast is whichever
+ *                 neutral stays legible ON the accent fill, which lands on the page
+ *                 ground in dark (#0b0d10) and on the surface white in light
+ *                 (#ffffff). It is NOT the page ink in either mode.
  *   semantic      per-theme mapping. Components reference ONLY these.
  *
  * Verified by tokens.contrast.test.ts: all 17 pairs clear WCAG AA in both modes.
  *
- * The accent splits three ways because lime is a FILL colour, not a TEXT colour.
- * Text on lime is 13:1; lime as text on white is 1.4:1. In dark mode the three
- * roles collapse to the same value, which is intentional, so that components
- * reference one token name and never branch on theme.
+ * The accent splits three ways because a fill colour and a text colour are not
+ * interchangeable: an accent light enough to carry dark text on it is usually too
+ * light to BE text on white. In dark mode the three roles collapse to one value,
+ * which is intentional, so components reference one token name and never branch
+ * on theme. In light mode they diverge.
+ *
+ * Deep emerald inverts between modes on purpose: a bright mint fill with dark text
+ * on the dark ground, and a deep forest fill with WHITE text on the light ground.
+ * That inversion is why --accent-contrast differs per mode.
  */
 :root {
   --p-dark-bg: #0b0d10;
@@ -19,9 +27,9 @@
   --p-dark-border-strong: #646d7a;
   --p-dark-text: #f0f2f4;
   --p-dark-muted: #9ba4af;
-  --p-dark-accent: #d8f34e;
-  --p-dark-accent-edge: #d8f34e;
-  --p-dark-accent-ink: #d8f34e;
+  --p-dark-accent: #34d399;
+  --p-dark-accent-edge: #34d399;
+  --p-dark-accent-ink: #34d399;
   --p-dark-accent-contrast: #0b0d10;
   --p-dark-positive: #4ade80;
   --p-dark-negative: #f87171;
@@ -35,10 +43,10 @@
   --p-light-border-strong: #767d72;
   --p-light-text: #14171a;
   --p-light-muted: #585f66;
-  --p-light-accent: #cbe93c;
-  --p-light-accent-edge: #6f8608;
-  --p-light-accent-ink: #4a6300;
-  --p-light-accent-contrast: #14171a;
+  --p-light-accent: #047857;
+  --p-light-accent-edge: #065f46;
+  --p-light-accent-ink: #065f46;
+  --p-light-accent-contrast: #ffffff;
   --p-light-positive: #15803d;
   --p-light-negative: #b91c1c;
   --p-light-negative-contrast: #ffffff;
