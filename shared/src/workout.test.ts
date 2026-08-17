@@ -4,6 +4,7 @@ import {
   createWorkoutSchema,
   setInputSchema,
   templateInputSchema,
+  updateExerciseSchema,
   updateWorkoutSchema,
 } from './workout';
 
@@ -76,6 +77,28 @@ describe('createExerciseSchema', () => {
         equipment: 'barbell',
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('updateExerciseSchema', () => {
+  it('accepts a Japanese name and trims it', () => {
+    const result = updateExerciseSchema.safeParse({ nameJa: '  ザーチャースクワット  ' });
+    expect(result.success).toBe(true);
+    expect(result.data?.nameJa).toBe('ザーチャースクワット');
+  });
+
+  it('accepts null to clear the Japanese name', () => {
+    const result = updateExerciseSchema.safeParse({ nameJa: null });
+    expect(result.success).toBe(true);
+    expect(result.data?.nameJa).toBeNull();
+  });
+
+  it('rejects a blank Japanese name, which would store an empty string', () => {
+    expect(updateExerciseSchema.safeParse({ nameJa: '   ' }).success).toBe(false);
+  });
+
+  it('still accepts an archive-only patch', () => {
+    expect(updateExerciseSchema.safeParse({ isArchived: true }).success).toBe(true);
   });
 });
 

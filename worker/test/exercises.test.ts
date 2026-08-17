@@ -146,6 +146,63 @@ describe('/api/exercises', () => {
     expect(res.status).toBe(201);
   });
 
+  it('refuses a rename onto a name that already resolves', async () => {
+    const headers = await authed();
+    await seedCustomExercise('mine', 'user-1', { nameEn: 'Zercher Carry' });
+    const res = await SELF.fetch('https://example.com/api/exercises/mine', {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Barbell Bench Press' }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string; existingName: string } };
+    expect(body.error.code).toBe('duplicate');
+    expect(body.error.existingName).toBe('Barbell Bench Press');
+  });
+
+  it('allows a patch that keeps the exercise’s own current name', async () => {
+    const headers = await authed();
+    await seedCustomExercise('mine', 'user-1', { nameEn: 'Zercher Carry' });
+    const res = await SELF.fetch('https://example.com/api/exercises/mine', {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Zercher Carry', muscleGroup: 'legs' }),
+    });
+    expect(res.status).toBe(200);
+    const updated = (await res.json()) as { muscleGroup: string };
+    expect(updated.muscleGroup).toBe('legs');
+  });
+
+  it('sets and clears the Japanese name', async () => {
+    const headers = await authed();
+    await seedCustomExercise('mine', 'user-1', { nameEn: 'Zercher Carry' });
+
+    const set = await SELF.fetch('https://example.com/api/exercises/mine', {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nameJa: 'ザーチャーキャリー' }),
+    });
+    expect(((await set.json()) as { nameJa: string | null }).nameJa).toBe('ザーチャーキャリー');
+
+    const cleared = await SELF.fetch('https://example.com/api/exercises/mine', {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nameJa: null }),
+    });
+    expect(((await cleared.json()) as { nameJa: string | null }).nameJa).toBeNull();
+  });
+
+  it('refuses a Japanese rename that collides with an existing exercise', async () => {
+    const headers = await authed();
+    await seedCustomExercise('mine', 'user-1', { nameEn: 'Flat Barbell Press' });
+    const res = await SELF.fetch('https://example.com/api/exercises/mine', {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nameJa: 'ベンチプレス' }),
+    });
+    expect(res.status).toBe(409);
+  });
+
   it('archives own custom exercise but rejects patching seed rows', async () => {
     const headers = await authed();
     await seedCustomExercise('mine', 'user-1');

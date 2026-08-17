@@ -17,9 +17,18 @@ export function I18nProvider({
   return <I18nContext.Provider value={locale}>{children}</I18nContext.Provider>;
 }
 
+/** Replace `{name}` placeholders. An unsupplied placeholder is left visible rather than blanked. */
+export function interpolate(message: string, vars?: Record<string, string>): string {
+  if (!vars) return message;
+  return message.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in vars ? vars[key]! : match,
+  );
+}
+
 export function useI18n() {
   const locale = useContext(I18nContext);
-  const t = (key: MessageKey): string => catalogs[locale][key];
+  const t = (key: MessageKey, vars?: Record<string, string>): string =>
+    interpolate(catalogs[locale][key], vars);
   return { locale, t };
 }
 
