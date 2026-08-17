@@ -7,6 +7,20 @@ describe('trimNum', () => {
     expect(trimNum(82.5)).toBe('82.5');
     expect(trimNum(82.25)).toBe('82.25');
   });
+  it('absorbs binary float artifacts from summing', () => {
+    expect(trimNum(0.1 + 0.2)).toBe('0.3');
+    expect(trimNum(44.800000000000004)).toBe('44.8');
+    expect(trimNum(72.34999999999999)).toBe('72.35');
+  });
+  it('rounds to maxDecimals', () => {
+    expect(trimNum(1451.4, 0)).toBe('1451');
+    expect(trimNum(5.4321, 3)).toBe('5.432');
+    expect(trimNum(-0.005)).toBe('-0.01');
+  });
+  it('passes non-finite values through', () => {
+    expect(trimNum(NaN)).toBe('NaN');
+    expect(trimNum(Infinity)).toBe('Infinity');
+  });
 });
 
 describe('formatSet', () => {

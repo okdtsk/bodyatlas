@@ -6,7 +6,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useI18n } from '../i18n';
 import { bucketSum, localDayKey, RANGES, rangeFromIso, weekKey } from '../lib/buckets';
 import type { RangeKey } from '../lib/buckets';
-import { sleepDurationLabel } from '../lib/format';
+import { formatKcal, sleepDurationLabel, trimNum } from '../lib/format';
 import { useSleep } from '../lib/health';
 import { useExercises } from '../lib/train';
 import { useNutritionBodyTrend, useStrengthTrend, useVolumeTrend } from '../lib/trends';
@@ -317,12 +317,12 @@ export function TrendsPage() {
                 <LegendSwatch
                   stroke="var(--accent-ink)"
                   dashed={false}
-                  label={`${t('trends.kcalPerDay')}${nutritionBodySeries.lastKcal !== null ? ` ${nutritionBodySeries.lastKcal}` : ''}`}
+                  label={`${t('trends.kcalPerDay')}${nutritionBodySeries.lastKcal !== null ? ` ${formatKcal(nutritionBodySeries.lastKcal)}` : ''}`}
                 />
                 <LegendSwatch
                   stroke="var(--positive)"
                   dashed
-                  label={`${t('trends.weightLine')}${nutritionBodySeries.lastWeight !== null ? ` ${nutritionBodySeries.lastWeight}kg` : ''}`}
+                  label={`${t('trends.weightLine')}${nutritionBodySeries.lastWeight !== null ? ` ${trimNum(nutritionBodySeries.lastWeight)}kg` : ''}`}
                 />
               </div>
             </>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
 import { IconSparkle, IconStar } from './icons';
-import { parseDecimal, toLocalInputValue } from '../lib/format';
+import { parseDecimal, toLocalInputValue, trimNum } from '../lib/format';
 import {
   useCreateMeal,
   useDeleteMeal,
@@ -39,10 +39,10 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
 
   const [name, setName] = useState(editing?.name ?? '');
   const [time, setTime] = useState(() => defaultTimeValue(editing, defaultDate));
-  const [kcal, setKcal] = useState(editing?.calories != null ? String(editing.calories) : '');
-  const [protein, setProtein] = useState(editing?.proteinG != null ? String(editing.proteinG) : '');
-  const [fat, setFat] = useState(editing?.fatG != null ? String(editing.fatG) : '');
-  const [carbs, setCarbs] = useState(editing?.carbsG != null ? String(editing.carbsG) : '');
+  const [kcal, setKcal] = useState(editing?.calories != null ? trimNum(editing.calories, 0) : '');
+  const [protein, setProtein] = useState(editing?.proteinG != null ? trimNum(editing.proteinG, 1) : '');
+  const [fat, setFat] = useState(editing?.fatG != null ? trimNum(editing.fatG, 1) : '');
+  const [carbs, setCarbs] = useState(editing?.carbsG != null ? trimNum(editing.carbsG, 1) : '');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [error, setError] = useState('');
@@ -67,9 +67,9 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
     try {
       const result = await estimateMeal.mutateAsync(description);
       setKcal(String(Math.round(result.calories)));
-      setProtein(String(result.proteinG));
-      setFat(String(result.fatG));
-      setCarbs(String(result.carbsG));
+      setProtein(trimNum(result.proteinG, 1));
+      setFat(trimNum(result.fatG, 1));
+      setCarbs(trimNum(result.carbsG, 1));
       setConfidence(result.confidence);
     } catch {
       setEstimateError(t('ai.error'));
@@ -91,9 +91,9 @@ export function MealFormSheet({ defaultDate, editing, onClose }: MealFormSheetPr
   function fillFromSuggestion(s: MealSearchResult) {
     setName(s.name);
     if (s.calories != null) setKcal(String(s.calories));
-    if (s.proteinG != null) setProtein(String(s.proteinG));
-    if (s.fatG != null) setFat(String(s.fatG));
-    if (s.carbsG != null) setCarbs(String(s.carbsG));
+    if (s.proteinG != null) setProtein(trimNum(s.proteinG, 1));
+    if (s.fatG != null) setFat(trimNum(s.fatG, 1));
+    if (s.carbsG != null) setCarbs(trimNum(s.carbsG, 1));
     setSuggestionsOpen(false);
   }
 

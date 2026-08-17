@@ -8,8 +8,20 @@ export function parseDecimal(v: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export function trimNum(n: number): string {
-  return String(n);
+/**
+ * Formats a number for display: rounds to at most `maxDecimals` places, which
+ * also absorbs binary float artifacts (44.800000000000004 → "44.8"), then drops
+ * trailing zeros. Every fractional value shown to the user goes through this.
+ */
+export function trimNum(n: number, maxDecimals = 2): string {
+  if (!Number.isFinite(n)) return String(n);
+  return String(Number(n.toFixed(maxDecimals)));
+}
+
+/** Calories are always whole numbers on screen, with locale digit grouping. */
+export function formatKcal(n: number): string {
+  if (!Number.isFinite(n)) return String(n);
+  return Math.round(n).toLocaleString();
 }
 
 type SetValues = {
@@ -32,7 +44,7 @@ export function formatSet(s: SetValues): string {
     const sec = s.durationSec % 60;
     parts.push(`${m}:${String(sec).padStart(2, '0')}`);
   }
-  if (s.distanceM !== null) parts.push(`${trimNum(s.distanceM / 1000)}km`);
+  if (s.distanceM !== null) parts.push(`${trimNum(s.distanceM / 1000, 3)}km`);
   let out = parts.join(' · ');
   if (s.rpe !== null) out += ` @${trimNum(s.rpe)}`;
   return out;

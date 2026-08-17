@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n';
+import { trimNum } from '../lib/format';
 
 interface ProgressBarProps {
   value: number;
@@ -39,21 +40,21 @@ export function MacroBars({ proteinG, fatG, carbsG, targetProteinG, targetFatG, 
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.protein')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {proteinG}g{targetProteinG != null ? ` / ${targetProteinG}g` : ''}
+          {trimNum(proteinG, 1)}g{targetProteinG != null ? ` / ${trimNum(targetProteinG, 1)}g` : ''}
         </span>
         <ProgressBar value={proteinG} target={targetProteinG} />
       </div>
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.fat')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {fatG}g{targetFatG != null ? ` / ${targetFatG}g` : ''}
+          {trimNum(fatG, 1)}g{targetFatG != null ? ` / ${trimNum(targetFatG, 1)}g` : ''}
         </span>
         <ProgressBar value={fatG} target={targetFatG} />
       </div>
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.carbs')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {carbsG}g{targetCarbsG != null ? ` / ${targetCarbsG}g` : ''}
+          {trimNum(carbsG, 1)}g{targetCarbsG != null ? ` / ${trimNum(targetCarbsG, 1)}g` : ''}
         </span>
         <ProgressBar value={carbsG} target={targetCarbsG} />
       </div>
