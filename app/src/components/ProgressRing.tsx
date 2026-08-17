@@ -11,7 +11,7 @@ export function ProgressRing({ done, total }: { done: number; total: number | nu
           cy="32"
           r={r}
           fill="none"
-          stroke="var(--accent)"
+          stroke="var(--accent-ink)"
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={c}
@@ -19,7 +19,18 @@ export function ProgressRing({ done, total }: { done: number; total: number | nu
           transform="rotate(-90 32 32)"
         />
       )}
-      <text x="32" y="37" textAnchor="middle" fill="var(--text)" fontSize="13" fontWeight="800">
+      <text
+        x="32"
+        y="37"
+        textAnchor="middle"
+        fill="var(--text)"
+        style={{
+          fontFamily: 'var(--font-metric)',
+          fontSize: 'var(--fs-label)',
+          fontWeight: 700,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
         {total && total > 0 ? `${done}/${total}` : done}
       </text>
     </svg>

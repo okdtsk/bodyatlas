@@ -36,12 +36,12 @@ export function OfflineIndicator() {
   return (
     <div
       role="status"
+      className="muted"
       style={{
-        fontSize: 12,
+        fontSize: 'var(--fs-micro)',
         textAlign: 'center',
-        padding: '4px 8px',
+        padding: 'var(--sp-1) var(--sp-2)',
         background: 'var(--surface-2)',
-        color: 'var(--text-muted)',
       }}
     >
       {label}

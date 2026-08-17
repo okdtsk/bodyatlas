@@ -11,7 +11,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'UTC',
   targetKcal: 2000,
@@ -132,6 +132,39 @@ describe('TodayPage', () => {
     expect(screen.getByText(/8h 30m/)).toBeInTheDocument();
   });
 
+  it('renders the actionable block first and the calorie hero second', async () => {
+    mockApi({
+      'GET /api/meals': [meal1, meal2],
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/workouts': [],
+      'GET /api/measurements': [],
+      'GET /api/sleep': [],
+    });
+    renderToday();
+
+    await screen.findByText(/1,?000/);
+    const main = screen.getByRole('region', { name: /today/i });
+    const order = Array.from(main.querySelectorAll('.block-accent, .metric-x'));
+    expect(order.length).toBeGreaterThanOrEqual(2);
+    expect(order[0]).toHaveClass('block-accent');
+    expect(order[1]).toHaveClass('metric-x');
+  });
+
+  it('uses at most two labels on the screen', async () => {
+    mockApi({
+      'GET /api/meals': [meal1, meal2],
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/workouts': [workoutToday],
+      'GET /api/measurements': [measurement2, measurement1],
+      'GET /api/sleep': [sleep1],
+    });
+    renderToday();
+
+    await screen.findByText(/1,?000/);
+    expect(screen.getByRole('region', { name: /today/i }).querySelectorAll('.label').length)
+      .toBeLessThanOrEqual(2);
+  });
+
   it('shows rest day and empty states when no workout, no weight, no sleep today', async () => {
     mockApi({
       'GET /api/meals': [],
@@ -142,11 +175,11 @@ describe('TodayPage', () => {
     });
     renderToday();
 
-    // Rest day message
-    expect(await screen.findByText(/Rest day/i)).toBeInTheDocument();
+    // No weight logged (waits for the measurements query to settle)
+    expect(await screen.findByText(/No weight logged yet/i)).toBeInTheDocument();
 
-    // No weight logged
-    expect(screen.getByText(/No weight logged yet/i)).toBeInTheDocument();
+    // Rest day message
+    expect(screen.getByText(/Rest day/i)).toBeInTheDocument();
 
     // No sleep logged
     expect(screen.getByText(/No sleep logged/i)).toBeInTheDocument();

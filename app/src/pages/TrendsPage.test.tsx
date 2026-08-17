@@ -12,7 +12,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'UTC',
   targetKcal: null,
@@ -170,5 +170,41 @@ describe('TrendsPage', () => {
     // Total set counts per week: 7 and 5
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  it('renders legend swatches rather than text dashes', async () => {
+    const user = userEvent.setup();
+    const strengthPoints = [
+      {
+        workoutId: 'w1',
+        startedAt: '2026-05-01T10:00:00Z',
+        topWeightKg: 82.5,
+        est1rm: 101.3,
+        setCount: 2,
+      },
+    ];
+    mockApi({
+      'GET /api/exercises': exercises,
+      'GET /api/trends/volume': [],
+      'GET /api/trends/nutrition-body': { meals: [], measurements: [] },
+      'GET /api/sleep': [],
+      'GET /api/trends/strength/ex-bench': strengthPoints,
+    });
+    renderTrends();
+
+    await screen.findByText('Barbell Bench Press');
+    const selects = screen.getAllByRole('combobox');
+    const select = selects.find((s) => s.querySelector('option[value=""]')) ?? selects[0]!;
+    await user.selectOptions(select, 'ex-bench');
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.legend-swatch').length).toBeGreaterThan(0);
+    });
+    expect(document.body.textContent ?? '').not.toMatch(/[—]|- -/);
+  });
+
+  it('renders the range picker as a segmented control', () => {
+    renderTrends();
+    expect(document.querySelector('.segmented')).toBeInTheDocument();
   });
 });

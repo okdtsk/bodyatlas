@@ -11,7 +11,7 @@ const me = {
   email: 'a@b.c',
   name: 'A',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'UTC',
   onboardedAt: null,

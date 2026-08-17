@@ -5,7 +5,7 @@ describe('userPrefsSchema', () => {
   it('accepts a valid full preference set', () => {
     const result = userPrefsSchema.safeParse({
       locale: 'ja',
-      theme: 'gym-dark',
+      theme: 'dark',
       unit: 'kg',
       timezone: 'Asia/Tokyo',
       targetKcal: 2400,
@@ -32,7 +32,7 @@ describe('userPrefsSchema', () => {
 
   it('accepts null for nutrition targets (clearing a goal)', () => {
     const result = userPrefsSchema.safeParse({
-      locale: 'en', theme: 'gym-dark', unit: 'kg', timezone: 'UTC',
+      locale: 'en', theme: 'dark', unit: 'kg', timezone: 'UTC',
       targetKcal: null, targetProteinG: null, targetFatG: null, targetCarbsG: null,
     });
     expect(result.success).toBe(true);
@@ -41,7 +41,7 @@ describe('userPrefsSchema', () => {
 
 describe('updateMeSchema', () => {
   it('accepts a partial patch', () => {
-    expect(updateMeSchema.safeParse({ theme: 'warm-journal' }).success).toBe(true);
+    expect(updateMeSchema.safeParse({ theme: 'light' }).success).toBe(true);
   });
 
   it('rejects a negative calorie target', () => {
@@ -54,5 +54,17 @@ describe('updateMeSchema', () => {
 
   it('rejects a non-IANA timezone', () => {
     expect(updateMeSchema.safeParse({ timezone: 'not-a-zone' }).success).toBe(false);
+  });
+
+  it('accepts the three theme modes', () => {
+    for (const theme of ['dark', 'light', 'system']) {
+      expect(updateMeSchema.safeParse({ theme }).success).toBe(true);
+    }
+  });
+
+  it('rejects the retired mood themes', () => {
+    for (const theme of ['gym-dark', 'clinical-light', 'warm-journal']) {
+      expect(updateMeSchema.safeParse({ theme }).success).toBe(false);
+    }
   });
 });

@@ -11,22 +11,14 @@ function ProgressBar({ value, target }: ProgressBarProps) {
     <div
       style={{
         background: 'var(--surface-2)',
-        borderRadius: 2,
+        borderRadius: 'var(--radius-sm)',
         height: 4,
         overflow: 'hidden',
         flex: 1,
         minWidth: 48,
       }}
     >
-      <div
-        style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: 'var(--accent)',
-          borderRadius: 2,
-          transition: 'width 0.2s',
-        }}
-      />
+      <div className="bar-fill" style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -47,21 +39,21 @@ export function MacroBars({ proteinG, fatG, carbsG, targetProteinG, targetFatG, 
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.protein')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {proteinG}g / {targetProteinG != null ? `${targetProteinG}g` : '—'}
+          {proteinG}g{targetProteinG != null ? ` / ${targetProteinG}g` : ''}
         </span>
         <ProgressBar value={proteinG} target={targetProteinG} />
       </div>
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.fat')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {fatG}g / {targetFatG != null ? `${targetFatG}g` : '—'}
+          {fatG}g{targetFatG != null ? ` / ${targetFatG}g` : ''}
         </span>
         <ProgressBar value={fatG} target={targetFatG} />
       </div>
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 12, width: 12, color: 'var(--text-muted)' }}>{t('health.carbs')}</span>
         <span style={{ fontSize: 13, minWidth: 80 }}>
-          {carbsG}g / {targetCarbsG != null ? `${targetCarbsG}g` : '—'}
+          {carbsG}g{targetCarbsG != null ? ` / ${targetCarbsG}g` : ''}
         </span>
         <ProgressBar value={carbsG} target={targetCarbsG} />
       </div>

@@ -14,7 +14,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'Asia/Tokyo',
   targetKcal: null,
@@ -98,8 +98,8 @@ describe('SettingsPage AI section', () => {
   });
 });
 
-// MealFormSheet: ✨ estimate fills kcal
-describe('MealFormSheet ✨ estimate', () => {
+// MealFormSheet: AI estimate fills kcal
+describe('MealFormSheet AI estimate', () => {
   it('estimate button fills the kcal field when hasKey is true', async () => {
     const estimateResult = {
       calories: 520,

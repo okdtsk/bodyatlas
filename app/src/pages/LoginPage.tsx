@@ -1,17 +1,7 @@
 import { useState } from 'react';
-import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../i18n';
 import { isNativeShell, nativeGoogleSignIn } from '../lib/native';
-
-const signInStyle: CSSProperties = {
-  background: 'var(--accent)',
-  color: 'var(--accent-contrast)',
-  padding: '12px 24px',
-  borderRadius: 'var(--radius)',
-  textDecoration: 'none',
-  fontWeight: 700,
-};
 
 export function LoginPage() {
   const { t } = useI18n();
@@ -48,45 +38,18 @@ export function LoginPage() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-        padding: 24,
-        textAlign: 'center',
-      }}
-    >
-      <h1 style={{ fontSize: 32 }}>{t('app.name')}</h1>
-      <p style={{ color: 'var(--text-muted)', maxWidth: 320 }}>{t('login.welcome')}</p>
+    <main className="login-main">
+      <h1 className="login-title">{t('app.name')}</h1>
+      <p className="muted" style={{ maxWidth: '40ch' }}>{t('login.welcome')}</p>
       {isNativeShell() ? (
-        <button
-          type="button"
-          onClick={handleNativeSignIn}
-          disabled={busy}
-          style={{
-            ...signInStyle,
-            border: 'none',
-            font: 'inherit',
-            fontWeight: 700,
-            cursor: busy ? 'default' : 'pointer',
-            opacity: busy ? 0.6 : 1,
-          }}
-        >
+        <button type="button" className="btn btn-primary btn-lg" onClick={handleNativeSignIn} disabled={busy}>
           {t('login.signIn')}
         </button>
       ) : (
-        <a href="/auth/google" style={signInStyle}>
-          {t('login.signIn')}
-        </a>
+        <a className="btn btn-primary btn-lg" href="/auth/google">{t('login.signIn')}</a>
       )}
-      {error && <p style={{ color: 'var(--negative)', maxWidth: 320 }}>{error}</p>}
-      <Link to="/privacy" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-        {t('privacy.link')}
-      </Link>
+      {error && <p className="error-text" style={{ maxWidth: '40ch' }}>{error}</p>}
+      <Link className="muted" to="/privacy">{t('privacy.link')}</Link>
     </main>
   );
 }

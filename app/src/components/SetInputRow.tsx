@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ExerciseType, SetInput } from '@bodyatlas/shared';
 import { useI18n } from '../i18n';
+import { IconEdit } from './icons';
 import { parseDecimal } from '../lib/format';
 
 const num = parseDecimal;
@@ -67,16 +68,16 @@ export function SetInputRow({
         {isCardio && field(t('field.duration'), durationMin, setDurationMin)}
         {isCardio && field(t('field.distance'), distanceKm, setDistanceKm)}
         <button
-          className="btn"
+          className="btn btn-ghost btn-icon"
           style={{ marginLeft: 'auto' }}
           aria-label={t('set.note')}
           onClick={() => setNoteOpen((o) => !o)}
           type="button"
         >
-          ✎
+          <IconEdit size={18} weight="bold" aria-hidden />
         </button>
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-lg"
           disabled={!valid || busy}
           onClick={() => {
             onSubmit(build());

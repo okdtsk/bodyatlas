@@ -33,7 +33,7 @@ describe('TrainPage', () => {
     renderTrain();
     expect(await screen.findByText('Push Day A')).toBeInTheDocument();
     expect(screen.getByText('Empty workout')).toBeInTheDocument();
-    expect(screen.getByText('No workouts yet — start your first one!')).toBeInTheDocument();
+    expect(screen.getByText('No workouts yet. Log your first one.')).toBeInTheDocument();
   });
 
   it('shows a resume card when a workout is active', async () => {
@@ -67,5 +67,26 @@ describe('TrainPage', () => {
     expect(await screen.findByText(/Back Squat/)).toBeInTheDocument();
     // setCount is wrapped in <strong>, so match the .muted div's full text content
     expect(screen.getByText((_, el) => el?.className === 'muted' && (el?.textContent ?? '').includes('5') && (el?.textContent ?? '').includes('sets'))).toBeInTheDocument();
+  });
+
+  it('uses at most two labels', () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/templates': [],
+      'GET /api/workouts': [],
+    });
+    renderTrain();
+    expect(document.querySelectorAll('.label').length).toBeLessThanOrEqual(2);
+  });
+
+  it('has no uppercase section titles left', () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: null },
+      'GET /api/templates': [],
+      'GET /api/workouts': [],
+    });
+    renderTrain();
+    // deslop-ignore-next-line 10 -- asserts absence of the legacy class, not an instance of it
+    expect(document.querySelectorAll('.section-title, .eyebrow').length).toBe(0);
   });
 });

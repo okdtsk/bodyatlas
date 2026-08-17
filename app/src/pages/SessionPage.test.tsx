@@ -105,4 +105,60 @@ describe('SessionPage', () => {
     renderSession();
     expect(await screen.findByText('TRAIN HOME')).toBeInTheDocument();
   });
+
+  it('renders no glyph characters as buttons', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: activeWorkout },
+      'GET /api/exercises/e1/last-sets': null,
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    // deslop-ignore-next-line 15 -- asserts absence of glyph characters, not an instance of one
+    expect(document.body.textContent ?? '').not.toMatch(/[✕✖↗↘]/u);
+  });
+
+  it('gives set-logging controls a 48px target', async () => {
+    mockApi({
+      'GET /api/workouts/active': { workout: activeWorkout },
+      'GET /api/exercises/e1/last-sets': null,
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    expect(screen.getByRole('button', { name: /log set/i })).toHaveClass('btn-lg');
+  });
+
+  it('does not flash the accent sweep on the set promoted to last by a delete', async () => {
+    // Two pre-existing sets. Deleting s1 promotes s2 to we.sets[we.sets.length - 1] while the
+    // total count shrinks 2 -> 1 - the same shape of change a delete and an append both produce.
+    let sets = [
+      { id: 's1', position: 1, weightKg: 80, reps: 8, rpe: null, durationSec: null, distanceM: null, note: null },
+      { id: 's2', position: 2, weightKg: 82.5, reps: 6, rpe: null, durationSec: null, distanceM: null, note: null },
+    ];
+    mockApi({
+      'GET /api/workouts/active': () => ({
+        workout: {
+          ...activeWorkout,
+          workoutExercises: [{ ...activeWorkout.workoutExercises[0], sets }],
+        },
+      }),
+      'GET /api/exercises/e1/last-sets': null,
+      'DELETE /api/workouts/w1/exercises/we1/sets/s1': () => {
+        sets = sets.filter((s) => s.id !== 's1');
+        return {};
+      },
+    });
+    renderSession();
+    await screen.findByText('Bench Press');
+    expect(screen.getByText(/80kg × 8/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'delete-set-1' }));
+    await waitFor(() => {
+      expect(screen.queryByText(/80kg × 8/)).not.toBeInTheDocument();
+    });
+
+    // s2 is now we.sets[we.sets.length - 1] but it was never newly logged - it must not carry
+    // the commit-flash class.
+    const row = screen.getByText(/82\.5kg × 6/).closest('.row');
+    expect(row).not.toHaveClass('set-committed');
+  });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useI18n } from '../i18n';
+import { IconClose, IconMoveDown, IconMoveUp, IconPlus } from '../components/icons';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { Skeleton } from '../components/Skeleton';
 import { exerciseName } from '../lib/format';
@@ -89,7 +90,7 @@ export function TemplateEditorPage() {
 
       <div className="stack" style={{ gap: 4 }}>
         {rows.map((row, i) => (
-          <div key={`${row.exercise.id}-${i}`} className="glow-card row" style={{ justifyContent: 'space-between' }}>
+          <div key={`${row.exercise.id}-${i}`} className="panel row" style={{ justifyContent: 'space-between' }}>
             <span>{exerciseName(row.exercise, locale)}</span>
             <span className="row">
               <input
@@ -109,22 +110,26 @@ export function TemplateEditorPage() {
                   );
                 }}
               />
-              <button className="btn" aria-label={`up-${i}`} onClick={() => move(i, -1)}>↑</button>
-              <button className="btn" aria-label={`down-${i}`} onClick={() => move(i, 1)}>↓</button>
+              <button className="btn btn-ghost btn-icon" aria-label={`up-${i}`} onClick={() => move(i, -1)}>
+                <IconMoveUp size={18} weight="bold" aria-hidden />
+              </button>
+              <button className="btn btn-ghost btn-icon" aria-label={`down-${i}`} onClick={() => move(i, 1)}>
+                <IconMoveDown size={18} weight="bold" aria-hidden />
+              </button>
               <button
-                className="btn"
+                className="btn btn-ghost btn-icon"
                 aria-label={`remove-${i}`}
                 onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
               >
-                ✕
+                <IconClose size={18} weight="bold" aria-hidden />
               </button>
             </span>
           </div>
         ))}
       </div>
 
-      <button className="btn" onClick={() => setPickerOpen(true)}>
-        + {t('train.addExercise')}
+      <button type="button" className="btn" onClick={() => setPickerOpen(true)}>
+        <IconPlus size={18} weight="bold" aria-hidden /> {t('train.addExercise')}
       </button>
 
       <div className="row">

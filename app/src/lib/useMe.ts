@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { UpdateMe } from '@bodyatlas/shared';
 import { api } from './api';
 
 export function useMe() {
@@ -16,3 +17,18 @@ export function useMe() {
 }
 
 export type Me = NonNullable<ReturnType<typeof useMe>['data']>;
+
+/** Persists a partial preference/target patch to /api/me and updates the cached user. */
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (patch: UpdateMe) => {
+      const res = await api.me.$patch({ json: patch });
+      if (!res.ok) throw new Error(`PATCH /api/me failed: ${res.status}`);
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['me'], updated);
+    },
+  });
+}

@@ -8,3 +8,4 @@ test-results/
 ios/App/App.xcodeproj/xcuserdata/
 ios/App/DerivedData/
 ios/App/output/
+e2e/__visual__/

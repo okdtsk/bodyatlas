@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
+import { IconStar } from './icons';
 import { toLocalInputValue } from '../lib/format';
 import {
   useCreateSleep,
@@ -138,7 +139,7 @@ export function SleepFormSheet({ defaultDate, editing, onClose }: SleepFormSheet
           <p className="error-text">{t('health.invalidSleepRange')}</p>
         )}
 
-        {/* Quality — five ★ toggle buttons */}
+        {/* Quality: five star toggle buttons */}
         <div className="stack" style={{ gap: 4 }}>
           <span>{t('health.quality')}</span>
           <div className="row" style={{ gap: 4 }}>
@@ -147,17 +148,15 @@ export function SleepFormSheet({ defaultDate, editing, onClose }: SleepFormSheet
                 key={star}
                 type="button"
                 aria-label={`quality-${star}`}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: 24,
-                  color: quality !== null && star <= quality ? 'var(--glow)' : 'var(--text-muted)',
-                  padding: 0,
-                }}
+                className="btn btn-ghost btn-icon"
                 onClick={() => handleQualityClick(star)}
               >
-                ★
+                <IconStar
+                  size={24}
+                  weight={quality !== null && star <= quality ? 'fill' : 'regular'}
+                  color={quality !== null && star <= quality ? 'var(--accent-ink)' : 'var(--text-muted)'}
+                  aria-hidden
+                />
               </button>
             ))}
           </div>
@@ -192,7 +191,7 @@ export function SleepFormSheet({ defaultDate, editing, onClose }: SleepFormSheet
             <button
               type="button"
               className="btn"
-              style={{ marginLeft: 'auto', color: 'var(--error)' }}
+              style={{ marginLeft: 'auto', color: 'var(--negative)' }}
               disabled={isBusy}
               onClick={handleDelete}
             >

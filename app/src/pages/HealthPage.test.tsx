@@ -12,7 +12,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'America/New_York',
   targetKcal: 2000,
@@ -76,8 +76,8 @@ describe('HealthPage', () => {
     expect(screen.getByText('Protein Shake')).toBeInTheDocument();
     // Summed kcal: 480 + 650 = 1130
     expect(screen.getByText(/1,?130/)).toBeInTheDocument();
-    // Favorite star for meal2
-    expect(screen.getAllByText('★').length).toBeGreaterThan(0);
+    // Favorite marker for meal2 (accessible IconStar, not a glyph)
+    expect(screen.getAllByLabelText('Favorite').length).toBeGreaterThan(0);
   });
 
   it('shows empty-state strings when no data for the day', async () => {
@@ -90,6 +90,19 @@ describe('HealthPage', () => {
     expect(await screen.findByText('No meals logged this day.')).toBeInTheDocument();
     expect(screen.getByText('No sleep logged.')).toBeInTheDocument();
     expect(screen.getByText('No measurement logged.')).toBeInTheDocument();
+  });
+
+  it('renders caret icons rather than glyph characters for day navigation', async () => {
+    mockApi({
+      'GET /api/meals': [],
+      'GET /api/sleep': [],
+      'GET /api/measurements': [],
+    });
+    renderHealth();
+    await screen.findByText('No meals logged this day.');
+    // deslop-ignore-next-line 15 -- asserts absence of glyph characters, not an instance of one
+    expect(document.body.textContent ?? '').not.toMatch(/[▶◀▸◂]/u);
+    expect(screen.getByRole('button', { name: 'next-day' })).toBeInTheDocument();
   });
 
   it('clicking prev-day fetches with from one day earlier', async () => {

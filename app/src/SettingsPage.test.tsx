@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
@@ -11,7 +11,7 @@ const me = {
   email: 'a@example.com',
   name: 'Alice',
   locale: 'en',
-  theme: 'gym-dark',
+  theme: 'dark',
   unit: 'kg',
   timezone: 'Asia/Tokyo',
   targetKcal: null,
@@ -54,15 +54,25 @@ function makeSetup(responseOverride?: Record<string, unknown>) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SettingsPage', () => {
-  it('PATCHes /api/me when the theme changes', async () => {
-    const fetchSpy = makeSetup({ theme: 'clinical-light' });
+  it('offers the three theme modes', () => {
+    makeSetup();
 
-    await userEvent.selectOptions(screen.getByLabelText('Theme'), 'clinical-light');
+    const group = screen.getByRole('group', { name: /theme/i });
+    for (const name of [/dark/i, /light/i, /system/i]) {
+      expect(within(group).getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('PATCHes /api/me when the theme changes', async () => {
+    const fetchSpy = makeSetup({ theme: 'light' });
+
+    const group = screen.getByRole('group', { name: /theme/i });
+    await userEvent.click(within(group).getByRole('button', { name: /light/i }));
 
     await waitFor(() => {
       const patchCall = fetchSpy.mock.calls.find(([, init]) => init?.method === 'PATCH');
       expect(patchCall).toBeTruthy();
-      expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ theme: 'clinical-light' });
+      expect(JSON.parse(String(patchCall![1]!.body))).toEqual({ theme: 'light' });
     });
   });
 

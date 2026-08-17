@@ -39,7 +39,7 @@ describe('auth gate', () => {
       email: 'a@example.com',
       name: 'Alice',
       locale: 'en',
-      theme: 'gym-dark',
+      theme: 'dark',
       unit: 'kg',
       timezone: 'Asia/Tokyo',
       onboardedAt: '2026-01-01T00:00:00Z',

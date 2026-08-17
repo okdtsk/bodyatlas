@@ -11,6 +11,7 @@ import { SleepFormSheet } from '../components/SleepFormSheet';
 import { MeasurementFormSheet } from '../components/MeasurementFormSheet';
 import { PendingBadge } from '../components/PendingBadge';
 import { useQueuedOpsByKind } from '../lib/offline/usePendingOps';
+import { IconPrev, IconNext, IconStar } from '../components/icons';
 
 type SheetState =
   | null
@@ -38,22 +39,14 @@ function KcalBar({ value, target }: KcalBarProps) {
     <div
       style={{
         background: 'var(--surface-2)',
-        borderRadius: 2,
+        borderRadius: 'var(--radius-sm)',
         height: 4,
         overflow: 'hidden',
         flex: 1,
         minWidth: 48,
       }}
     >
-      <div
-        style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: 'var(--accent)',
-          borderRadius: 2,
-          transition: 'width 0.2s',
-        }}
-      />
+      <div className="bar-fill" style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -113,53 +106,40 @@ export function HealthPage() {
     pendingMeasurements.length === 0;
 
   return (
-    <section>
+    <section aria-label={t('nav.health')}>
       {/* Day navigation header */}
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
         <button
-          className="btn"
+          className="btn btn-ghost btn-icon"
           aria-label="prev-day"
           onClick={() => setSelectedDate((d) => addDays(d, -1))}
-          style={{ padding: '6px 12px' }}
         >
-          ◀
+          <IconPrev size={20} weight="bold" aria-hidden />
         </button>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 700 }}>{formatDay(selectedDate.toISOString(), locale)}</div>
           {isToday(selectedDate) && (
-            <span
-              style={{
-                fontSize: 11,
-                background: 'var(--accent)',
-                color: 'var(--accent-contrast)',
-                borderRadius: 8,
-                padding: '1px 7px',
-                fontWeight: 600,
-              }}
-            >
+            <span className="chip chip-accent" style={{ fontWeight: 600 }}>
               {t('health.today')}
             </span>
           )}
         </div>
         <button
-          className="btn"
+          className="btn btn-ghost btn-icon"
           aria-label="next-day"
           onClick={() => setSelectedDate((d) => addDays(d, 1))}
-          style={{ padding: '6px 12px' }}
         >
-          ▶
+          <IconNext size={20} weight="bold" aria-hidden />
         </button>
       </div>
 
       {/* Daily total card */}
-      <div className="glow-card is-active" style={{ marginBottom: 16 }}>
-        <div className="eyebrow" style={{ marginBottom: 8 }}>{t('health.dailyTotal')}</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
-          <span style={{ fontSize: 32, fontWeight: 800 }}>
-            {totalKcal.toLocaleString()}
-          </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            / {me?.targetKcal != null ? me.targetKcal.toLocaleString() : '—'} {t('health.calories')}
+      <div className="panel" data-state="active" style={{ marginBottom: 'var(--sp-4)' }}>
+        <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
+          <span className="metric metric-x">{totalKcal.toLocaleString()}</span>
+          <span className="metric-unit">
+            {me?.targetKcal != null ? `/ ${me.targetKcal.toLocaleString()} ` : ''}
+            {t('health.calories')}
           </span>
         </div>
         <KcalBar value={totalKcal} target={me?.targetKcal} />
@@ -180,10 +160,10 @@ export function HealthPage() {
 
       {/* Meals section */}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="section-title" style={{ margin: 0 }}>{t('health.meals')}</div>
+        <div className="label" style={{ margin: 0 }}>{t('health.meals')}</div>
         <button
           className="btn btn-primary"
-          style={{ fontSize: 13, padding: '5px 12px' }}
+          style={{ fontSize: 'var(--fs-label)', padding: '5px 12px' }}
           onClick={() => setOpenSheet({ kind: 'meal' })}
         >
           {t('health.addMeal')}
@@ -199,7 +179,7 @@ export function HealthPage() {
           {pendingMeals.map((op) => (
             <div
               key={op.id}
-              className="card"
+              className="panel"
               style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.7 }}
             >
               <span style={{ flex: 1, fontWeight: 500 }}>{String(op.payload.name ?? '')}</span>
@@ -209,25 +189,29 @@ export function HealthPage() {
           {meals.map((meal) => (
             <div
               key={meal.id}
-              className="card tappable"
+              className="panel tappable"
               style={{ display: 'flex', alignItems: 'center', gap: 10 }}
               onClick={() => setOpenSheet({ kind: 'meal', editing: meal })}
             >
-              <span className="muted" style={{ minWidth: 42 }}>
+              <span className="metric" style={{ fontSize: 'var(--fs-label)', minWidth: 42 }}>
                 {formatTime(meal.eatenAt, locale)}
               </span>
               <span style={{ flex: 1, fontWeight: 500 }}>{meal.name}</span>
               {meal.calories != null && (
-                <span className="muted">{meal.calories} {t('health.calories')}</span>
+                <span className="metric" style={{ fontSize: 'var(--fs-label)' }}>
+                  {meal.calories} {t('health.calories')}
+                </span>
               )}
-              {meal.isFavorite && <span>★</span>}
+              {meal.isFavorite && (
+                <IconStar size={14} weight="fill" color="var(--accent-ink)" aria-label={t('health.favorite')} />
+              )}
             </div>
           ))}
         </div>
       )}
 
       {/* Sleep section */}
-      <div className="section-title" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.sleep')}</div>
+      <div className="label" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.sleep')}</div>
       {sleepQuery.isPending ? (
         <Skeleton height={72} />
       ) : sleepRecords.length === 0 && pendingSleep.length === 0 ? (
@@ -235,7 +219,7 @@ export function HealthPage() {
           <p className="muted">{t('health.noSleep')}</p>
           <button
             className="btn"
-            style={{ fontSize: 13, padding: '5px 12px', marginTop: 6 }}
+            style={{ fontSize: 'var(--fs-label)', padding: '5px 12px', marginTop: 6 }}
             onClick={() => setOpenSheet({ kind: 'sleep' })}
           >
             {t('health.addSleep')}
@@ -246,7 +230,7 @@ export function HealthPage() {
           {pendingSleep.map((op) => (
             <div
               key={op.id}
-              className="card"
+              className="panel"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}
             >
               <span>{t('health.sleep')}</span>
@@ -256,17 +240,31 @@ export function HealthPage() {
           {sleepRecords.map((s) => (
             <div
               key={s.id}
-              className="card tappable"
+              className="panel tappable"
               onClick={() => setOpenSheet({ kind: 'sleep', editing: s })}
             >
-              <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
+              <div className="metric" style={{ marginBottom: 'var(--sp-1)' }}>
                 {sleepDurationLabel(s.bedAt, s.wokeAt)}
               </div>
               <div className="muted">
                 {formatTime(s.bedAt, locale)} → {formatTime(s.wokeAt, locale)}
               </div>
               {s.quality != null && (
-                <div style={{ marginTop: 4 }}>{'★'.repeat(s.quality)}</div>
+                <div
+                  className="row"
+                  style={{ gap: 2, marginTop: 4 }}
+                  aria-label={`${t('field.quality')}: ${s.quality}/5`}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <IconStar
+                      key={n}
+                      size={14}
+                      weight={n <= s.quality! ? 'fill' : 'regular'}
+                      color={n <= s.quality! ? 'var(--accent-ink)' : 'var(--text-muted)'}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
               )}
             </div>
           ))}
@@ -274,7 +272,7 @@ export function HealthPage() {
       )}
 
       {/* Body section */}
-      <div className="section-title" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.body')}</div>
+      <div className="label" style={{ marginTop: 20, marginBottom: 8 }}>{t('health.body')}</div>
       {measurementsQuery.isPending ? (
         <Skeleton height={64} />
       ) : measurements.length === 0 && pendingMeasurements.length === 0 ? (
@@ -282,7 +280,7 @@ export function HealthPage() {
           <p className="muted">{t('health.noMeasurement')}</p>
           <button
             className="btn"
-            style={{ fontSize: 13, padding: '5px 12px', marginTop: 6 }}
+            style={{ fontSize: 'var(--fs-label)', padding: '5px 12px', marginTop: 6 }}
             onClick={() => setOpenSheet({ kind: 'measurement' })}
           >
             {t('health.addMeasurement')}
@@ -293,7 +291,7 @@ export function HealthPage() {
           {pendingMeasurements.map((op) => (
             <div
               key={op.id}
-              className="card"
+              className="panel"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.7 }}
             >
               <span>
@@ -309,13 +307,13 @@ export function HealthPage() {
           {measurements.map((m) => (
             <div
               key={m.id}
-              className="card tappable"
+              className="panel tappable"
               onClick={() => setOpenSheet({ kind: 'measurement', editing: m })}
             >
               {m.weightKg != null && (
                 <div>
-                  <div className="eyebrow">{t('health.weight')}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>{m.weightKg}</div>
+                  <div className="label">{t('health.weight')}</div>
+                  <div className="metric">{m.weightKg}</div>
                 </div>
               )}
               {m.bodyFatPct != null && (

@@ -157,7 +157,7 @@ export function MeasurementFormSheet({ defaultDate, editing, onClose }: Measurem
             <button
               type="button"
               className="btn"
-              style={{ marginLeft: 'auto', color: 'var(--error)' }}
+              style={{ marginLeft: 'auto', color: 'var(--negative)' }}
               disabled={isBusy}
               onClick={handleDelete}
             >

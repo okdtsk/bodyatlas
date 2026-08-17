@@ -5,13 +5,8 @@ export function PendingBadge({ failed = false }: { failed?: boolean }) {
   const { t } = useI18n();
   return (
     <span
-      style={{
-        fontSize: 11,
-        padding: '1px 6px',
-        borderRadius: 999,
-        background: failed ? 'var(--negative)' : 'var(--surface-2)',
-        color: failed ? 'var(--accent-contrast)' : 'var(--text-muted)',
-      }}
+      className="chip"
+      style={failed ? { background: 'var(--negative)', color: 'var(--negative-contrast)' } : undefined}
     >
       {failed ? t('offline.failed') : t('offline.pending')}
     </span>

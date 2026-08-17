@@ -9,6 +9,7 @@ import { useMe } from '../lib/useMe';
 import { MacroBars } from '../components/MacroBars';
 import { Sparkline } from '../components/charts/Sparkline';
 import { Skeleton } from '../components/Skeleton';
+import { IconCheck, IconStar } from '../components/icons';
 
 function isSameDay(isoA: string, isoB: string): boolean {
   const a = new Date(isoA);
@@ -17,7 +18,7 @@ function isSameDay(isoA: string, isoB: string): boolean {
 }
 
 export function TodayPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: me } = useMe();
 
   const today = useMemo(() => new Date(), []);
@@ -68,119 +69,99 @@ export function TodayPage() {
     lastSleep == null;
 
   return (
-    <section>
-      <h1 className="section-title" style={{ marginBottom: 16 }}>{t('nav.today')}</h1>
+    <section aria-label={t('nav.today')}>
+      {isEmpty && <p className="muted" style={{ textAlign: 'center', padding: 'var(--sp-5)' }}>{t('empty.today')}</p>}
 
-      {isEmpty && (
-        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('empty.today')}</p>
-      )}
-
-      <div className="stack" style={{ gap: 12 }}>
-        {/* Nutrition card */}
-        <Link to="/health" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="glow-card">
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{t('health.calories')}</div>
-            {mealsQuery.isPending ? (
-              <Skeleton height={40} />
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                  <span style={{ fontSize: 32, fontWeight: 800 }}>
-                    {totalKcal.toLocaleString()}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                    / {me?.targetKcal != null ? me.targetKcal.toLocaleString() : '—'} kcal {t('today.eaten')}
-                  </span>
-                </div>
-                <MacroBars
-                  proteinG={totalProtein}
-                  fatG={totalFat}
-                  carbsG={totalCarbs}
-                  targetProteinG={me?.targetProteinG}
-                  targetFatG={me?.targetFatG}
-                  targetCarbsG={me?.targetCarbsG}
-                />
-              </>
+      <div className="stack" style={{ gap: 'var(--sp-3)' }}>
+        {/* Tier 1 - the one actionable thing. Exactly one accent block per screen. */}
+        {activeWorkout ? (
+          <Link to="/train/session" className="block-accent rise-in">
+            <strong style={{ fontSize: 'var(--fs-title)' }}>{t('train.resume')}</strong>
+            <div className="muted">{t('train.inProgress')}</div>
+          </Link>
+        ) : doneToday ? (
+          <div className="panel rise-in" data-state="active">
+            <div className="row">
+              <IconCheck size={20} weight="bold" aria-hidden />
+              <strong>{t('today.done')}</strong>
+            </div>
+            {latestWorkout && (
+              <div className="muted">
+                {(locale === 'ja' ? latestWorkout.exerciseNamesJa : latestWorkout.exerciseNames)?.join(', ')}
+              </div>
             )}
           </div>
-        </Link>
-
-        {/* Workout card */}
-        {activeWorkout ? (
-          <Link to="/train/session" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="glow-card is-active">
-              <div className="eyebrow" style={{ marginBottom: 8 }}>{t('today.workout')}</div>
-              {activeQuery.isPending ? (
-                <Skeleton height={32} />
-              ) : (
-                <div style={{ fontWeight: 700, fontSize: 18 }}>{t('train.inProgress')}</div>
-              )}
-            </div>
-          </Link>
         ) : (
-          <Link to="/train" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="glow-card">
-              <div className="eyebrow" style={{ marginBottom: 8 }}>{t('today.workout')}</div>
-              {activeQuery.isPending || recentWorkoutsQuery.isPending ? (
-                <Skeleton height={32} />
-              ) : doneToday ? (
-                <>
-                  <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--positive)' }}>
-                    ✓ {t('today.done')}
-                  </div>
-                  {latestWorkout && (
-                    <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-                      {latestWorkout.exerciseNames?.join(', ')}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="muted">{t('today.restDay')}</div>
-              )}
-            </div>
+          <Link to="/train" className="block-accent rise-in">
+            <strong style={{ fontSize: 'var(--fs-title)' }}>{t('train.start')}</strong>
+            <div className="muted">{t('today.restDay')}</div>
           </Link>
         )}
 
-        {/* Weight card */}
-        <Link to="/health" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="glow-card">
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{t('today.weight')}</div>
+        {/* Tier 2 - the hero metric. No label: the number states what it is. */}
+        <Link to="/health" className="panel tappable rise-in" style={{ animationDelay: '60ms' }}>
+          {mealsQuery.isPending ? (
+            <Skeleton height={72} />
+          ) : (
+            <>
+              <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)' }}>
+                <span className="metric metric-x">{totalKcal.toLocaleString()}</span>
+                <span className="metric-unit">
+                  {me?.targetKcal != null ? `/ ${me.targetKcal.toLocaleString()} ` : ''}
+                  kcal {t('today.eaten')}
+                </span>
+              </div>
+              <MacroBars
+                proteinG={totalProtein} fatG={totalFat} carbsG={totalCarbs}
+                targetProteinG={me?.targetProteinG} targetFatG={me?.targetFatG}
+                targetCarbsG={me?.targetCarbsG}
+              />
+            </>
+          )}
+        </Link>
+
+        {/* Tier 3 - glanceable secondaries, 2-up. These keep their labels because
+            "72.4" and "7h 20m" are ambiguous without one. */}
+        <div className="row" style={{ gap: 'var(--sp-3)', alignItems: 'stretch' }}>
+          <Link to="/health" className="panel tappable rise-in" style={{ flex: 1, animationDelay: '120ms' }}>
+            <div className="label">{t('today.weight')}</div>
             {measurementsQuery.isPending ? (
-              <Skeleton height={48} />
+              <Skeleton height={40} />
             ) : latestWeight?.weightKg != null ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 32, fontWeight: 800 }}>{latestWeight.weightKg}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>kg</span>
-                {sparklinePoints.length > 1 && (
-                  <Sparkline points={sparklinePoints} />
-                )}
+              <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)' }}>
+                <span className="metric">{latestWeight.weightKg}</span>
+                <span className="metric-unit">kg</span>
+                {sparklinePoints.length > 1 && <Sparkline points={sparklinePoints} />}
               </div>
             ) : (
               <p className="muted">{t('today.noWeight')}</p>
             )}
-          </div>
-        </Link>
+          </Link>
 
-        {/* Sleep card */}
-        <Link to="/health" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="glow-card">
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{t('today.sleep')}</div>
+          <Link to="/health" className="panel tappable rise-in" style={{ flex: 1, animationDelay: '180ms' }}>
+            <div className="label">{t('today.sleep')}</div>
             {sleepQuery.isPending ? (
-              <Skeleton height={48} />
+              <Skeleton height={40} />
             ) : lastSleep ? (
-              <div>
-                <div style={{ fontSize: 28, fontWeight: 800 }}>
-                  {sleepDurationLabel(lastSleep.bedAt, lastSleep.wokeAt)}
-                </div>
+              <>
+                <span className="metric">{sleepDurationLabel(lastSleep.bedAt, lastSleep.wokeAt)}</span>
                 {lastSleep.quality != null && (
-                  <div style={{ marginTop: 4 }}>{'★'.repeat(lastSleep.quality)}</div>
+                  <div className="row" style={{ gap: 2 }} aria-label={`${t('field.quality')}: ${lastSleep.quality}/5`}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <IconStar
+                        key={n} size={14} weight={n <= lastSleep.quality! ? 'fill' : 'regular'}
+                        color={n <= lastSleep.quality! ? 'var(--accent-ink)' : 'var(--text-muted)'}
+                        aria-hidden
+                      />
+                    ))}
+                  </div>
                 )}
-              </div>
+              </>
             ) : (
               <p className="muted">{t('today.noSleep')}</p>
             )}
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -20,7 +20,7 @@ describe('users table', () => {
     expect(user).toMatchObject({
       email: 'a@example.com',
       locale: 'en',
-      theme: 'gym-dark',
+      theme: 'dark',
       unit: 'kg',
       timezone: 'Asia/Tokyo',
       targetKcal: null,
