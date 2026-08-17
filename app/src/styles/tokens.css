@@ -1,7 +1,10 @@
 /*
  * Two layers:
  *   --p-<mode>-*  raw palette, defined here and referenced by name below. A few
- *                 roles intentionally share a value (accent-contrast is the page ink).
+ *                 roles intentionally share a value: accent-contrast is whichever
+ *                 neutral stays legible ON the accent fill, which lands on the page
+ *                 ground in dark (#0b0d10) and on the surface white in light
+ *                 (#ffffff). It is NOT the page ink in either mode.
  *   semantic      per-theme mapping. Components reference ONLY these.
  *
  * Verified by tokens.contrast.test.ts: all 17 pairs clear WCAG AA in both modes.
