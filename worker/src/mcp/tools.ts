@@ -4,12 +4,14 @@
  * Each handler takes (d1, userId, input) and returns a JSON-serializable result.
  * Thrown ToolError(message) is a user-facing error (shown as isError content).
  */
+import { EQUIPMENT, EXERCISE_TYPES, MUSCLE_GROUPS } from '@bodyatlas/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { and, asc, desc, eq, gte, isNull, lt, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb, schema } from '../db';
 import { likeContains } from '../lib/sql';
 import { dayWindowFor, strengthSeries } from '../lib/stats';
+import { matchExercise, type ExerciseCandidate } from './match';
 
 // ---------------------------------------------------------------------------
 // ToolError
@@ -76,7 +78,9 @@ const workoutExerciseToolInput = z.object({
   exerciseName: z
     .string()
     .min(1)
-    .describe('Exact name (case-insensitive) in English or Japanese. Use get_recent_workouts to find names.'),
+    .describe(
+      'Exercise name in English or Japanese. Matched case-insensitively; a partial name works if it identifies exactly one exercise. Use search_exercises to find names, create_exercise to add a missing one.',
+    ),
   sets: z.array(setToolInput).min(1).max(50),
 });
 
@@ -93,6 +97,32 @@ const workoutToolInput = z.object({
     .describe('ISO datetime with timezone (defaults to now)'),
   notes: z.string().max(2000).optional(),
   exercises: z.array(workoutExerciseToolInput).min(1).max(30),
+});
+
+const searchExercisesToolInput = z.object({
+  query: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .describe('Substring of an English or Japanese name. Omit to list the whole catalog.'),
+  limit: z.number().int().min(1).max(50).optional().describe('1–50, default 20'),
+});
+
+const createExerciseToolInput = z.object({
+  name: z.string().trim().min(1).max(100).describe('Display name, in the user’s own language'),
+  nameJa: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe(
+      'Japanese name, when known. Set it whenever the user talks about this exercise in Japanese so it stays findable in both languages.',
+    ),
+  type: z.enum(EXERCISE_TYPES),
+  muscleGroup: z.enum(MUSCLE_GROUPS),
+  equipment: z.enum(EQUIPMENT),
 });
 
 const recentWorkoutsToolInput = z.object({
@@ -132,54 +162,54 @@ function formatSet(s: {
   return `${weight}${reps}${rpe}`;
 }
 
-/** Resolve exercise by exact case-insensitive name match in seed ∪ user custom. */
+/** Exercises the user may log against: the seed catalog plus their own, unarchived. */
+const visibleExercises = (userId: string) =>
+  and(
+    or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
+    eq(schema.exercises.isArchived, false),
+  );
+
+/** Load the whole visible catalog once, so matching can be done in memory. */
+async function loadExerciseCatalog(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+): Promise<ExerciseCandidate[]> {
+  return db
+    .select({
+      id: schema.exercises.id,
+      nameEn: schema.exercises.nameEn,
+      nameJa: schema.exercises.nameJa,
+    })
+    .from(schema.exercises)
+    .where(visibleExercises(userId))
+    .orderBy(asc(schema.exercises.nameEn));
+}
+
+const RECOVERY_HINT =
+  'Call search_exercises to browse the catalog, or create_exercise to add it if it is genuinely new.';
+
+/** Resolve a name against an already-loaded catalog, or throw a ToolError explaining why not. */
+function resolveExerciseIn(catalog: ExerciseCandidate[], exerciseName: string): string {
+  const result = matchExercise(catalog, exerciseName);
+  if (result.kind === 'match') return result.exercise.id;
+
+  const names = result.suggestions.map((s) => s.nameEn).join(', ');
+  if (result.kind === 'ambiguous') {
+    throw new ToolError(
+      `Exercise name "${exerciseName}" is ambiguous — it matches: ${names}. Use the full name.`,
+    );
+  }
+  const didYouMean = names ? ` Did you mean: ${names}?` : '';
+  throw new ToolError(`Exercise not found: "${exerciseName}".${didYouMean} ${RECOVERY_HINT}`);
+}
+
+/** Resolve a single exercise name for callers that only need one. */
 async function resolveExercise(
   db: ReturnType<typeof getDb>,
   userId: string,
   exerciseName: string,
 ): Promise<string> {
-  // Exact case-insensitive match via SQL LOWER
-  const [found] = await db
-    .select({ id: schema.exercises.id, nameEn: schema.exercises.nameEn })
-    .from(schema.exercises)
-    .where(
-      and(
-        or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
-        eq(schema.exercises.isArchived, false),
-        or(
-          sql`LOWER(${schema.exercises.nameEn}) = LOWER(${exerciseName})`,
-          sql`LOWER(${schema.exercises.nameJa}) = LOWER(${exerciseName})`,
-        ),
-      ),
-    )
-    .limit(1);
-
-  if (found) return found.id;
-
-  // Not found — find up to 5 suggestions via likeContains
-  const suggestions = await db
-    .select({ nameEn: schema.exercises.nameEn })
-    .from(schema.exercises)
-    .where(
-      and(
-        or(isNull(schema.exercises.userId), eq(schema.exercises.userId, userId)),
-        eq(schema.exercises.isArchived, false),
-        or(
-          likeContains(schema.exercises.nameEn, exerciseName),
-          likeContains(schema.exercises.nameJa, exerciseName),
-        ),
-      ),
-    )
-    .limit(5);
-
-  const suggestionList =
-    suggestions.length > 0
-      ? `\nDid you mean: ${suggestions.map((s) => s.nameEn).join(', ')}?`
-      : '\nNo similar exercises found.';
-
-  throw new ToolError(
-    `Exercise not found: "${exerciseName}".${suggestionList}`,
-  );
+  return resolveExerciseIn(await loadExerciseCatalog(db, userId), exerciseName);
 }
 
 // ---------------------------------------------------------------------------
@@ -276,11 +306,11 @@ export async function logWorkout(
   const endedAt = input.endedAt ? new Date(input.endedAt) : now;
 
   // Resolve all exercise names first (fail fast before inserting)
-  const resolvedExercises: Array<{ exerciseId: string; sets: z.infer<typeof setToolInput>[] }> = [];
-  for (const ex of input.exercises) {
-    const exerciseId = await resolveExercise(db, userId, ex.exerciseName);
-    resolvedExercises.push({ exerciseId, sets: ex.sets });
-  }
+  const catalog = await loadExerciseCatalog(db, userId);
+  const resolvedExercises = input.exercises.map((ex) => ({
+    exerciseId: resolveExerciseIn(catalog, ex.exerciseName),
+    sets: ex.sets,
+  }));
 
   const workoutId = crypto.randomUUID();
 
@@ -334,6 +364,105 @@ export async function logWorkout(
     workoutId,
     exerciseCount: resolvedExercises.length,
     setCount: totalSetCount,
+  };
+}
+
+export async function searchExercises(
+  d1: D1Database,
+  userId: string,
+  input: z.infer<typeof searchExercisesToolInput>,
+): Promise<
+  Array<{
+    name: string;
+    nameJa: string | null;
+    type: string;
+    muscleGroup: string;
+    equipment: string;
+    isCustom: boolean;
+  }>
+> {
+  const db = getDb(d1);
+  const { query } = input;
+  const rows = await db
+    .select({
+      nameEn: schema.exercises.nameEn,
+      nameJa: schema.exercises.nameJa,
+      type: schema.exercises.type,
+      muscleGroup: schema.exercises.muscleGroup,
+      equipment: schema.exercises.equipment,
+      userId: schema.exercises.userId,
+    })
+    .from(schema.exercises)
+    .where(
+      and(
+        visibleExercises(userId),
+        query
+          ? or(
+              likeContains(schema.exercises.nameEn, query),
+              likeContains(schema.exercises.nameJa, query),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(asc(schema.exercises.nameEn))
+    .limit(input.limit ?? 20);
+
+  return rows.map((r) => ({
+    name: r.nameEn,
+    nameJa: r.nameJa,
+    type: r.type,
+    muscleGroup: r.muscleGroup,
+    equipment: r.equipment,
+    isCustom: r.userId !== null,
+  }));
+}
+
+export async function createExercise(
+  d1: D1Database,
+  userId: string,
+  input: z.infer<typeof createExerciseToolInput>,
+): Promise<{
+  id: string;
+  name: string;
+  nameJa: string | null;
+  type: string;
+  muscleGroup: string;
+  equipment: string;
+}> {
+  const db = getDb(d1);
+
+  // Refuse a name that already resolves — a near-duplicate row would silently
+  // split the user's strength history across two exercises. Both names are
+  // checked, since either one is enough to make the new row a duplicate.
+  const catalog = await loadExerciseCatalog(db, userId);
+  for (const candidateName of [input.name, input.nameJa]) {
+    if (!candidateName) continue;
+    const existing = matchExercise(catalog, candidateName);
+    if (existing.kind === 'match') {
+      throw new ToolError(
+        `"${candidateName}" already resolves to the existing exercise "${existing.exercise.nameEn}". Log against that instead.`,
+      );
+    }
+  }
+
+  const id = crypto.randomUUID();
+  const nameJa = input.nameJa ?? null;
+  await db.insert(schema.exercises).values({
+    id,
+    userId,
+    nameEn: input.name,
+    nameJa,
+    type: input.type,
+    muscleGroup: input.muscleGroup,
+    equipment: input.equipment,
+  });
+  return {
+    id,
+    name: input.name,
+    nameJa,
+    type: input.type,
+    muscleGroup: input.muscleGroup,
+    equipment: input.equipment,
   };
 }
 
@@ -605,10 +734,30 @@ export function registerTools(
     'log_workout',
     {
       description:
-        'Log a completed workout with exercises and sets. Exercise names are matched case-insensitively against the catalog (English or Japanese). Sets need at least reps, durationSec, or distanceM. weightKg in kg; RPE 1–10 in 0.5 steps.',
+        'Log a completed workout with exercises and sets. Exercise names are matched case-insensitively against the catalog (English or Japanese); a partial name works if it identifies exactly one exercise. If a name is not found, call search_exercises to find the right one, then create_exercise if it is genuinely missing — do not give up. Sets need at least reps, durationSec, or distanceM. weightKg in kg; RPE 1–10 in 0.5 steps.',
       inputSchema: workoutToolInput,
     },
     async (input) => runTool(() => logWorkout(db, getUserId(), input)),
+  );
+
+  server.registerTool(
+    'search_exercises',
+    {
+      description:
+        'Search the exercise catalog (seeded exercises plus the user’s custom ones). query matches a substring of the English or Japanese name; omit it to browse everything. Use this before log_workout when unsure of a name.',
+      inputSchema: searchExercisesToolInput,
+    },
+    async (input) => runTool(() => searchExercises(db, getUserId(), input)),
+  );
+
+  server.registerTool(
+    'create_exercise',
+    {
+      description:
+        'Add a custom exercise to the user’s catalog so it can be logged. Call search_exercises first and only create when nothing matches. Classify it accurately — muscleGroup drives the user’s training-volume analytics.',
+      inputSchema: createExerciseToolInput,
+    },
+    async (input) => runTool(() => createExercise(db, getUserId(), input)),
   );
 
   server.registerTool(

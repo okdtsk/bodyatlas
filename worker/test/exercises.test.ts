@@ -54,6 +54,35 @@ describe('/api/exercises', () => {
     expect(created.userId).toBe('user-1');
   });
 
+  it('creates a custom exercise with a Japanese name', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Zercher Squat',
+        nameJa: 'ザーチャースクワット',
+        type: 'strength',
+        muscleGroup: 'legs',
+        equipment: 'barbell',
+      }),
+    });
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as { nameEn: string; nameJa: string | null };
+    expect(created.nameJa).toBe('ザーチャースクワット');
+  });
+
+  it('leaves nameJa null when it is omitted', async () => {
+    const headers = await authed();
+    const res = await SELF.fetch('https://example.com/api/exercises', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Zercher Carry', type: 'strength', muscleGroup: 'full-body', equipment: 'barbell' }),
+    });
+    const created = (await res.json()) as { nameJa: string | null };
+    expect(created.nameJa).toBeNull();
+  });
+
   it('archives own custom exercise but rejects patching seed rows', async () => {
     const headers = await authed();
     await seedCustomExercise('mine', 'user-1');

@@ -53,6 +53,30 @@ describe('createExerciseSchema', () => {
   it('trims and bounds the name', () => {
     expect(createExerciseSchema.safeParse({ name: '  ', type: 'strength', muscleGroup: 'chest', equipment: 'barbell' }).success).toBe(false);
   });
+
+  it('accepts an optional Japanese name', () => {
+    const result = createExerciseSchema.safeParse({
+      name: 'Zercher Squat',
+      nameJa: '  ザーチャースクワット  ',
+      type: 'strength',
+      muscleGroup: 'legs',
+      equipment: 'barbell',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.nameJa).toBe('ザーチャースクワット');
+  });
+
+  it('rejects a blank Japanese name rather than storing an empty string', () => {
+    expect(
+      createExerciseSchema.safeParse({
+        name: 'Zercher Squat',
+        nameJa: '   ',
+        type: 'strength',
+        muscleGroup: 'legs',
+        equipment: 'barbell',
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe('updateWorkoutSchema', () => {

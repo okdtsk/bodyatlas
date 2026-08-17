@@ -46,6 +46,7 @@ export const exercisesRoutes = new Hono<ProtectedEnv>()
         id,
         userId: c.get('userId'),
         nameEn: input.name,
+        nameJa: input.nameJa ?? null,
         type: input.type,
         muscleGroup: input.muscleGroup,
         equipment: input.equipment,

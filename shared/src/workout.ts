@@ -43,6 +43,9 @@ export const setInputSchema = z
 
 export const createExerciseSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  // Optional second name so an exercise stays findable in both languages;
+  // absent means null, never an empty string.
+  nameJa: z.string().trim().min(1).max(100).optional(),
   type: z.enum(EXERCISE_TYPES),
   muscleGroup: z.enum(MUSCLE_GROUPS),
   equipment: z.enum(EQUIPMENT),
