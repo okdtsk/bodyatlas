@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
-import { parseDecimal, toLocalInputValue } from '../lib/format';
+import { parseDecimal, toLocalInputValue, trimNum } from '../lib/format';
 import {
   useCreateMeasurement,
   useDeleteMeasurement,
@@ -32,8 +32,8 @@ export function MeasurementFormSheet({ defaultDate, editing, onClose }: Measurem
   const { t } = useI18n();
   const isCreate = !editing;
 
-  const [weight, setWeight] = useState(editing?.weightKg != null ? String(editing.weightKg) : '');
-  const [bodyFat, setBodyFat] = useState(editing?.bodyFatPct != null ? String(editing.bodyFatPct) : '');
+  const [weight, setWeight] = useState(editing?.weightKg != null ? trimNum(editing.weightKg) : '');
+  const [bodyFat, setBodyFat] = useState(editing?.bodyFatPct != null ? trimNum(editing.bodyFatPct) : '');
   const [time, setTime] = useState(() => defaultTimeValue(editing, defaultDate));
   const [error, setError] = useState('');
 

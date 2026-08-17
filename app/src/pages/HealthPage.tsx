@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useI18n } from '../i18n';
-import { addDays, dayRangeIso, formatDay, formatTime, sleepDurationLabel, sumBy } from '../lib/format';
+import { addDays, dayRangeIso, formatDay, formatKcal, formatTime, sleepDurationLabel, sumBy, trimNum } from '../lib/format';
 import { useMeals, useSleep, useMeasurements, type Meal, type SleepRecord, type Measurement } from '../lib/health';
 import { useMe } from '../lib/useMe';
 import { MacroBars } from '../components/MacroBars';
@@ -136,9 +136,9 @@ export function HealthPage() {
       {/* Daily total card */}
       <div className="panel" data-state="active" style={{ marginBottom: 'var(--sp-4)' }}>
         <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
-          <span className="metric metric-x">{totalKcal.toLocaleString()}</span>
+          <span className="metric metric-x">{formatKcal(totalKcal)}</span>
           <span className="metric-unit">
-            {me?.targetKcal != null ? `/ ${me.targetKcal.toLocaleString()} ` : ''}
+            {me?.targetKcal != null ? `/ ${formatKcal(me.targetKcal)} ` : ''}
             {t('health.calories')}
           </span>
         </div>
@@ -199,7 +199,7 @@ export function HealthPage() {
               <span style={{ flex: 1, fontWeight: 500 }}>{meal.name}</span>
               {meal.calories != null && (
                 <span className="metric" style={{ fontSize: 'var(--fs-label)' }}>
-                  {meal.calories} {t('health.calories')}
+                  {formatKcal(meal.calories)} {t('health.calories')}
                 </span>
               )}
               {meal.isFavorite && (
@@ -296,9 +296,9 @@ export function HealthPage() {
             >
               <span>
                 {op.payload.weightKg != null
-                  ? `${String(op.payload.weightKg)} ${t('health.weight')}`
+                  ? `${trimNum(Number(op.payload.weightKg))} ${t('health.weight')}`
                   : op.payload.bodyFatPct != null
-                    ? `${String(op.payload.bodyFatPct)}% ${t('health.bodyFat')}`
+                    ? `${trimNum(Number(op.payload.bodyFatPct))}% ${t('health.bodyFat')}`
                     : t('health.body')}
               </span>
               <PendingBadge failed={op.status === 'failed'} />
@@ -313,11 +313,11 @@ export function HealthPage() {
               {m.weightKg != null && (
                 <div>
                   <div className="label">{t('health.weight')}</div>
-                  <div className="metric">{m.weightKg}</div>
+                  <div className="metric">{trimNum(m.weightKg)}</div>
                 </div>
               )}
               {m.bodyFatPct != null && (
-                <div className="muted">{m.bodyFatPct}% {t('health.bodyFat')}</div>
+                <div className="muted">{trimNum(m.bodyFatPct)}% {t('health.bodyFat')}</div>
               )}
             </div>
           ))}

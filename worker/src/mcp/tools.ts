@@ -485,8 +485,10 @@ export async function getToday(
     .from(schema.meals)
     .where(and(eq(schema.meals.userId, userId), gte(schema.meals.eatenAt, from), lt(schema.meals.eatenAt, to)));
 
-  const kcal = todayMeals.reduce((sum, m) => sum + (m.calories ?? 0), 0);
-  const proteinG = todayMeals.reduce((sum, m) => sum + (m.proteinG ?? 0), 0);
+  // Round the sums: floating-point accumulation otherwise reports 44.800000000000004.
+  const kcal = Math.round(todayMeals.reduce((sum, m) => sum + (m.calories ?? 0), 0));
+  const proteinG =
+    Math.round(todayMeals.reduce((sum, m) => sum + (m.proteinG ?? 0), 0) * 10) / 10;
 
   // Today's workout status
   const todayWorkouts = await db

@@ -36,7 +36,7 @@ function DetailExercise({ workoutId, we }: { workoutId: string; we: Detail['work
               reps: s.reps !== null ? String(s.reps) : '',
               rpe: s.rpe !== null ? trimNum(s.rpe) : '',
               durationMin: s.durationSec !== null ? trimNum(s.durationSec / 60) : '',
-              distanceKm: s.distanceM !== null ? trimNum(s.distanceM / 1000) : '',
+              distanceKm: s.distanceM !== null ? trimNum(s.distanceM / 1000, 3) : '',
               note: s.note ?? '',
             }}
             onSubmit={(input) =>

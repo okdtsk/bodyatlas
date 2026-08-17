@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../i18n';
-import { dayRangeIso, sleepDurationLabel, sumBy } from '../lib/format';
+import { dayRangeIso, formatKcal, sleepDurationLabel, sumBy, trimNum } from '../lib/format';
 import { useMeals, useSleep, useMeasurements } from '../lib/health';
 import { rangeFromIso } from '../lib/buckets';
 import { useActiveWorkout, useWorkouts } from '../lib/train';
@@ -105,9 +105,9 @@ export function TodayPage() {
           ) : (
             <>
               <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)' }}>
-                <span className="metric metric-x">{totalKcal.toLocaleString()}</span>
+                <span className="metric metric-x">{formatKcal(totalKcal)}</span>
                 <span className="metric-unit">
-                  {me?.targetKcal != null ? `/ ${me.targetKcal.toLocaleString()} ` : ''}
+                  {me?.targetKcal != null ? `/ ${formatKcal(me.targetKcal)} ` : ''}
                   kcal {t('today.eaten')}
                 </span>
               </div>
@@ -129,7 +129,7 @@ export function TodayPage() {
               <Skeleton height={40} />
             ) : latestWeight?.weightKg != null ? (
               <div className="row" style={{ alignItems: 'baseline', gap: 'var(--sp-2)' }}>
-                <span className="metric">{latestWeight.weightKg}</span>
+                <span className="metric">{trimNum(latestWeight.weightKg)}</span>
                 <span className="metric-unit">kg</span>
                 {sparklinePoints.length > 1 && <Sparkline points={sparklinePoints} />}
               </div>

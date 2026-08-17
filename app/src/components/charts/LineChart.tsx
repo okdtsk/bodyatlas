@@ -1,3 +1,5 @@
+import { trimNum } from '../../lib/format';
+
 type Series = { points: Array<{ x: number; y: number }>; stroke: string; dashed?: boolean };
 
 /** Minimal token-colored line chart. x/y are raw values; scales computed from data. */
@@ -34,8 +36,8 @@ export function LineChart({ series, height = 160, yUnit = '' }: { series: Series
         )}
       </svg>
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="muted">{yMin === yMax ? '' : `${yMin}${yUnit}`}</span>
-        <span className="muted">{`${yMax}${yUnit}`}</span>
+        <span className="muted">{yMin === yMax ? '' : `${trimNum(yMin, 1)}${yUnit}`}</span>
+        <span className="muted">{`${trimNum(yMax, 1)}${yUnit}`}</span>
       </div>
     </div>
   );
