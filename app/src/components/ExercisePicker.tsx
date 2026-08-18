@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EQUIPMENT, EXERCISE_TYPES, MUSCLE_GROUPS, type CreateExercise } from '@bodyatlas/shared';
 import { useI18n, type MessageKey } from '../i18n';
+import { ApiError } from '../lib/api';
 import { exerciseName } from '../lib/format';
 import { useCreateExercise, useExercises, type Exercise } from '../lib/train';
 
@@ -17,12 +18,15 @@ export function ExercisePicker({
   const { data: exercises, isPending } = useExercises(q);
   const create = useCreateExercise();
 
+  const japanese = locale === 'ja';
+
   const [form, setForm] = useState<CreateExercise>({
     name: '',
     type: 'strength',
     muscleGroup: 'chest',
     equipment: 'barbell',
   });
+  const [nameJa, setNameJa] = useState('');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -31,9 +35,19 @@ export function ExercisePicker({
   }, [onClose]);
 
   const submitCreate = () => {
-    create.mutate(form, {
-      onSuccess: (created) => onSelect(created),
-    });
+    const trimmedJa = nameJa.trim();
+    create.mutate(
+      { ...form, ...(trimmedJa ? { nameJa: trimmedJa } : {}) },
+      { onSuccess: (created) => onSelect(created) },
+    );
+  };
+
+  const createErrorMessage = (): string => {
+    const error = create.error;
+    if (error instanceof ApiError && error.code === 'duplicate' && error.existingName) {
+      return t('error.exercise.duplicate', { name: error.existingName });
+    }
+    return t('error.generic');
   };
 
   return (
@@ -81,14 +95,26 @@ export function ExercisePicker({
         ) : (
           <>
             <label className="stack" style={{ gap: 4 }}>
-              {t('exercise.name')}
+              {t(japanese ? 'exercise.nameEn' : 'exercise.name')}
               <input
                 className="input"
-                aria-label={t('exercise.name')}
+                aria-label={t(japanese ? 'exercise.nameEn' : 'exercise.name')}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </label>
+            {/* Only Japanese users need the second name; the catalog matches on either. */}
+            {japanese && (
+              <label className="stack" style={{ gap: 4 }}>
+                {t('exercise.nameJa')}
+                <input
+                  className="input"
+                  aria-label={t('exercise.nameJa')}
+                  value={nameJa}
+                  onChange={(e) => setNameJa(e.target.value)}
+                />
+              </label>
+            )}
             <label className="stack" style={{ gap: 4 }}>
               {t('exercise.type')}
               <select
@@ -132,7 +158,7 @@ export function ExercisePicker({
                 ))}
               </select>
             </label>
-            {create.isError && <p className="error-text">{t('error.generic')}</p>}
+            {create.isError && <p className="error-text">{createErrorMessage()}</p>}
             <div className="row">
               <button
                 className="btn btn-primary"

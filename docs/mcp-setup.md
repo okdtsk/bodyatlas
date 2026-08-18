@@ -26,7 +26,19 @@ CLI**: `gemini mcp add bodyatlas https://bodyatlas.okdtsk.dev/mcp` (the CLI runs
 same OAuth flow).
 
 ## Tools
-log_meal, log_workout, log_weight, log_sleep, get_recent_workouts, get_trends, get_today.
+log_meal, log_workout, log_weight, log_sleep, search_exercises, create_exercise,
+get_recent_workouts, get_trends, get_today.
+
+`log_workout` takes exercise names, not ids. A name is matched case-insensitively
+against the English and Japanese names in the catalog, ignoring spacing, hyphens and
+half-width/full-width differences; a partial name resolves when it identifies exactly
+one exercise ("hack squat" → Machine Hack Squat). When nothing matches, the error
+points the client at `search_exercises` to browse the catalog and `create_exercise` to
+add a genuinely new movement — so a missing exercise no longer dead-ends the log.
+`create_exercise` takes an optional `nameJa` alongside the English name, so an exercise
+added from a Japanese conversation stays findable in both languages; it refuses a name
+that already resolves — under either name — which keeps one movement from splitting into
+two rows and halving its strength history. `POST /api/exercises` accepts `nameJa` too.
 
 ## Revoking access
 Re-authorizing replaces the prior grant. (A grant-management UI is future work.)

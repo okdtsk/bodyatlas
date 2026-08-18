@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { en } from './en';
+import { interpolate } from './index';
 import { ja } from './ja';
 
 describe('message catalogs', () => {
@@ -13,6 +14,26 @@ describe('message catalogs', () => {
         expect(value, `empty message for ${key}`).not.toBe('');
       }
     }
+  });
+});
+
+describe('interpolate', () => {
+  it('substitutes a named placeholder', () => {
+    expect(interpolate('"{name}" already exists.', { name: 'Back Squat' })).toBe(
+      '"Back Squat" already exists.',
+    );
+  });
+
+  it('substitutes every occurrence', () => {
+    expect(interpolate('{a} and {a}', { a: 'x' })).toBe('x and x');
+  });
+
+  it('leaves a placeholder alone when no value is supplied', () => {
+    expect(interpolate('{name} missing', {})).toBe('{name} missing');
+  });
+
+  it('returns the message unchanged when there are no vars', () => {
+    expect(interpolate('plain text')).toBe('plain text');
   });
 });
 

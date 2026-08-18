@@ -12,6 +12,8 @@ import {
   logWeight,
   logSleep,
   logWorkout,
+  createExercise,
+  searchExercises,
   getRecentWorkouts,
   getTrends,
   getToday,
@@ -173,24 +175,220 @@ describe('logWorkout', () => {
     expect(result.setCount).toBe(1);
   });
 
-  it('throws ToolError with suggestions for unknown exercise name', async () => {
+  it('resolves a partial name that hits exactly one exercise', async () => {
+    await seedUser('user-1');
+    const result = await logWorkout(env.DB, 'user-1', {
+      exercises: [{ exerciseName: 'hack squat', sets: [{ weightKg: 120, reps: 10 }] }],
+    });
+    expect(result.setCount).toBe(1);
+
+    const db = getDb(env.DB);
+    const we = await db.query.workoutExercises.findFirst({
+      where: (t, { eq }) => eq(t.workoutId, result.workoutId),
+    });
+    expect(we?.exerciseId).toBe('seed-machine-hack-squat');
+  });
+
+  it('refuses a partial name that hits several exercises', async () => {
     await seedUser('user-1');
     let threw: unknown;
     try {
       await logWorkout(env.DB, 'user-1', {
-        exercises: [
-          {
-            exerciseName: 'barbell bench', // partial match — not exact
-            sets: [{ reps: 10 }],
-          },
-        ],
+        exercises: [{ exerciseName: 'squat', sets: [{ reps: 10 }] }],
       });
     } catch (e) {
       threw = e;
     }
     expect(threw).toBeInstanceOf(ToolError);
-    expect((threw as ToolError).message).toMatch(/barbell bench/i);
-    expect((threw as ToolError).message).toMatch(/Barbell Bench Press/); // suggestion
+    expect((threw as ToolError).message).toMatch(/Back Squat/);
+    expect((threw as ToolError).message).toMatch(/Front Squat/);
+  });
+
+  it('points an unknown exercise name at search_exercises and create_exercise', async () => {
+    await seedUser('user-1');
+    let threw: unknown;
+    try {
+      await logWorkout(env.DB, 'user-1', {
+        exercises: [{ exerciseName: 'Zercher Carry', sets: [{ reps: 10 }] }],
+      });
+    } catch (e) {
+      threw = e;
+    }
+    expect(threw).toBeInstanceOf(ToolError);
+    expect((threw as ToolError).message).toMatch(/Zercher Carry/);
+    expect((threw as ToolError).message).toMatch(/search_exercises/);
+    expect((threw as ToolError).message).toMatch(/create_exercise/);
+  });
+
+  it('logs against an exercise that was just created via create_exercise', async () => {
+    await seedUser('user-1');
+    await createExercise(env.DB, 'user-1', {
+      name: 'Zercher Carry',
+      type: 'strength',
+      muscleGroup: 'full-body',
+      equipment: 'barbell',
+    });
+    const result = await logWorkout(env.DB, 'user-1', {
+      exercises: [{ exerciseName: 'zercher carry', sets: [{ weightKg: 60, durationSec: 45 }] }],
+    });
+    expect(result.setCount).toBe(1);
+  });
+
+  it('does not resolve another user’s custom exercise', async () => {
+    await seedUser('user-1');
+    await seedUser('user-2');
+    await seedCustomExercise('ex-other', 'user-2', { nameEn: 'Zercher Carry' });
+    await expect(
+      logWorkout(env.DB, 'user-1', {
+        exercises: [{ exerciseName: 'Zercher Carry', sets: [{ reps: 5 }] }],
+      }),
+    ).rejects.toBeInstanceOf(ToolError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// search_exercises
+// ---------------------------------------------------------------------------
+
+describe('searchExercises', () => {
+  it('returns matching seed exercises with their metadata', async () => {
+    await seedUser('user-1');
+    const result = await searchExercises(env.DB, 'user-1', { query: 'squat' });
+    const names = result.map((e) => e.name);
+    expect(names).toContain('Back Squat');
+    expect(names).toContain('Machine Hack Squat');
+    expect(names).not.toContain('Barbell Bench Press');
+
+    const backSquat = result.find((e) => e.name === 'Back Squat')!;
+    expect(backSquat).toMatchObject({
+      nameJa: 'バックスクワット',
+      type: 'strength',
+      muscleGroup: 'legs',
+      isCustom: false,
+    });
+  });
+
+  it('matches Japanese names', async () => {
+    await seedUser('user-1');
+    const result = await searchExercises(env.DB, 'user-1', { query: 'スクワット' });
+    expect(result.map((e) => e.name)).toContain('Back Squat');
+  });
+
+  it('lists the whole catalog when no query is given', async () => {
+    await seedUser('user-1');
+    const result = await searchExercises(env.DB, 'user-1', { limit: 50 });
+    expect(result.length).toBe(42);
+  });
+
+  it('includes the caller’s custom exercises and flags them, excluding other users’', async () => {
+    await seedUser('user-1');
+    await seedUser('user-2');
+    await seedCustomExercise('ex-mine', 'user-1', { nameEn: 'Zercher Carry' });
+    await seedCustomExercise('ex-theirs', 'user-2', { nameEn: 'Zercher Squat' });
+
+    const result = await searchExercises(env.DB, 'user-1', { query: 'zercher' });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ name: 'Zercher Carry', isCustom: true });
+  });
+
+  it('excludes archived exercises', async () => {
+    await seedUser('user-1');
+    await seedCustomExercise('ex-old', 'user-1', { nameEn: 'Zercher Carry', isArchived: true });
+    const result = await searchExercises(env.DB, 'user-1', { query: 'zercher' });
+    expect(result).toEqual([]);
+  });
+
+  it('honours the limit', async () => {
+    await seedUser('user-1');
+    const result = await searchExercises(env.DB, 'user-1', { limit: 3 });
+    expect(result).toHaveLength(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// create_exercise
+// ---------------------------------------------------------------------------
+
+describe('createExercise', () => {
+  it('inserts a custom exercise owned by the caller', async () => {
+    await seedUser('user-1');
+    const result = await createExercise(env.DB, 'user-1', {
+      name: 'Zercher Carry',
+      type: 'strength',
+      muscleGroup: 'full-body',
+      equipment: 'barbell',
+    });
+    expect(result).toMatchObject({ name: 'Zercher Carry', muscleGroup: 'full-body' });
+
+    const db = getDb(env.DB);
+    const row = await db.query.exercises.findFirst({ where: (e, { eq }) => eq(e.id, result.id) });
+    expect(row?.userId).toBe('user-1');
+    expect(row?.isArchived).toBe(false);
+  });
+
+  it('refuses a name that already resolves, so history is never split', async () => {
+    await seedUser('user-1');
+    let threw: unknown;
+    try {
+      await createExercise(env.DB, 'user-1', {
+        name: 'barbell bench press',
+        type: 'strength',
+        muscleGroup: 'chest',
+        equipment: 'barbell',
+      });
+    } catch (e) {
+      threw = e;
+    }
+    expect(threw).toBeInstanceOf(ToolError);
+    expect((threw as ToolError).message).toMatch(/Barbell Bench Press/);
+  });
+
+  it('stores a Japanese name that log_workout can then resolve by', async () => {
+    await seedUser('user-1');
+    await createExercise(env.DB, 'user-1', {
+      name: 'Zercher Squat',
+      nameJa: 'ザーチャースクワット',
+      type: 'strength',
+      muscleGroup: 'legs',
+      equipment: 'barbell',
+    });
+
+    const result = await logWorkout(env.DB, 'user-1', {
+      exercises: [{ exerciseName: 'ザーチャースクワット', sets: [{ weightKg: 60, reps: 8 }] }],
+    });
+    expect(result.setCount).toBe(1);
+
+    const found = await searchExercises(env.DB, 'user-1', { query: 'ザーチャー' });
+    expect(found[0]).toMatchObject({ name: 'Zercher Squat', nameJa: 'ザーチャースクワット' });
+  });
+
+  it('refuses when the Japanese name collides with an existing exercise', async () => {
+    await seedUser('user-1');
+    let threw: unknown;
+    try {
+      await createExercise(env.DB, 'user-1', {
+        name: 'Flat Barbell Press',
+        nameJa: 'ベンチプレス', // already the JA name of Barbell Bench Press
+        type: 'strength',
+        muscleGroup: 'chest',
+        equipment: 'barbell',
+      });
+    } catch (e) {
+      threw = e;
+    }
+    expect(threw).toBeInstanceOf(ToolError);
+    expect((threw as ToolError).message).toMatch(/Barbell Bench Press/);
+  });
+
+  it('allows a name that only fuzzily resembles an existing one', async () => {
+    await seedUser('user-1');
+    const result = await createExercise(env.DB, 'user-1', {
+      name: 'Incline Barbell Press',
+      type: 'strength',
+      muscleGroup: 'chest',
+      equipment: 'barbell',
+    });
+    expect(result.name).toBe('Incline Barbell Press');
   });
 });
 

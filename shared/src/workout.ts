@@ -43,6 +43,9 @@ export const setInputSchema = z
 
 export const createExerciseSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  // Optional second name so an exercise stays findable in both languages;
+  // absent means null, never an empty string.
+  nameJa: z.string().trim().min(1).max(100).optional(),
   type: z.enum(EXERCISE_TYPES),
   muscleGroup: z.enum(MUSCLE_GROUPS),
   equipment: z.enum(EQUIPMENT),
@@ -50,6 +53,8 @@ export const createExerciseSchema = z.object({
 
 export const updateExerciseSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
+  // null clears the Japanese name, so a typo is not permanent.
+  nameJa: z.string().trim().min(1).max(100).nullable().optional(),
   muscleGroup: z.enum(MUSCLE_GROUPS).optional(),
   equipment: z.enum(EQUIPMENT).optional(),
   isArchived: z.boolean().optional(),

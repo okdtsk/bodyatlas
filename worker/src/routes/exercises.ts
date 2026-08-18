@@ -3,12 +3,23 @@ import { createExerciseSchema, updateExerciseSchema } from '@bodyatlas/shared';
 import { and, asc, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb, schema } from '../db';
+import { findExerciseConflict, loadExerciseCatalog } from '../lib/exercises';
 import { likeContains } from '../lib/sql';
 import type { ProtectedEnv } from '../types';
 
 const validationError = (issues: unknown) =>
   ({ error: { code: 'validation', message: 'Invalid request body', details: issues } }) as const;
 const notFound = { error: { code: 'not_found', message: 'Exercise not found' } } as const;
+// existingName is a separate field, not just prose, so a client can compose its
+// own localized sentence instead of echoing this English string at the user.
+const duplicate = (existingName: string) =>
+  ({
+    error: {
+      code: 'duplicate',
+      message: `That name already resolves to the existing exercise "${existingName}"`,
+      existingName,
+    },
+  }) as const;
 
 export const exercisesRoutes = new Hono<ProtectedEnv>()
   .get('/', async (c) => {
@@ -41,11 +52,19 @@ export const exercisesRoutes = new Hono<ProtectedEnv>()
     async (c) => {
       const input = c.req.valid('json');
       const db = getDb(c.env.DB);
+
+      // Same duplicate rule as the MCP create_exercise tool: a row whose name
+      // already resolves would split one movement's history across two rows.
+      const catalog = await loadExerciseCatalog(db, c.get('userId'));
+      const conflict = findExerciseConflict(catalog, [input.name, input.nameJa]);
+      if (conflict) return c.json(duplicate(conflict.nameEn), 409);
+
       const id = crypto.randomUUID();
       await db.insert(schema.exercises).values({
         id,
         userId: c.get('userId'),
         nameEn: input.name,
+        nameJa: input.nameJa ?? null,
         type: input.type,
         muscleGroup: input.muscleGroup,
         equipment: input.equipment,
@@ -69,6 +88,18 @@ export const exercisesRoutes = new Hono<ProtectedEnv>()
       if (!existing) return c.json(notFound, 404);
       const patch = c.req.valid('json');
       const { name, ...rest } = patch;
+
+      // Renaming can collide just as creating can. The row being edited is
+      // excluded, or keeping its own current name would count as a conflict.
+      if (name !== undefined || patch.nameJa !== undefined) {
+        const catalog = await loadExerciseCatalog(db, c.get('userId'));
+        const conflict = findExerciseConflict(
+          catalog.filter((e) => e.id !== id),
+          [name, patch.nameJa],
+        );
+        if (conflict) return c.json(duplicate(conflict.nameEn), 409);
+      }
+
       if (Object.keys(patch).length > 0) {
         await db
           .update(schema.exercises)
