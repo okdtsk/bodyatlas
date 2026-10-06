@@ -12,6 +12,8 @@ An audit write failure emits only `security_audit_write_failed` and does not fai
 
 Use a current Wrangler supporting `observability.redact_query_string`; older project CLI versions ignore it. Vite-generated configs can contain deprecated `legacy_env`; remove that field when deploying through current Wrangler. Verify the live redaction setting after every deployment. Historic platform logs are not retroactively redacted.
 
+Keep `observability.logs.invocation_logs=false`. The Agents SDK forwards JSON-RPC messages as base64 in the internal `cf-mcp-message` header; automatic invocation logs persisted that header without masking during live verification. Disabling invocation logs prevents automatic request metadata from retaining tool arguments. Custom logs remain enabled and the D1 audit retains actor, operation and status. Automatic HTTP invocation history, including unauthenticated OAuth provider traffic, is consequently unavailable in Workers Logs; zone security analytics and application audit cover different parts of the traffic. Existing platform logs remain subject to their retention policy.
+
 ```sql
 SELECT datetime(occurred_at / 1000, 'unixepoch') AS time_utc,
        actor_id, action, category, operation, status
