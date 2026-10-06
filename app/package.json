@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "vite build && wrangler deploy",
+    "deploy": "vite build && node scripts/prepare-deploy.mjs && npx --yes wrangler@4.147.0 deploy --config dist/bodyatlas/wrangler.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

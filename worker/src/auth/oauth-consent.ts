@@ -6,6 +6,7 @@ import { getDb, schema } from '../db';
 import { SESSION_COOKIE } from './middleware';
 import { getSessionUserId } from './session';
 import type { AppEnv } from '../types';
+import { isAllowedUser } from './private-access';
 
 const CONSENT_TTL_SECONDS = 600;
 
@@ -66,6 +67,8 @@ export const oauthConsentRoutes = new Hono<AppEnv>()
     }
 
     const client = await c.env.OAUTH_PROVIDER.lookupClient(oauthReq.clientId);
+    c.set('userId', userId);
+    if (!await isAllowedUser(c.env, userId)) return c.text('Account is not permitted', 403);
     const clientName = client?.clientName ?? oauthReq.clientId;
 
     const csrf = crypto.randomUUID();
@@ -84,6 +87,8 @@ export const oauthConsentRoutes = new Hono<AppEnv>()
     const token = getCookie(c, SESSION_COOKIE);
     const userId = token ? await getSessionUserId(c.env.SESSIONS, token) : null;
     if (!userId) return c.text('Sign in required', 401);
+    c.set('userId', userId);
+    if (!await isAllowedUser(c.env, userId)) return c.text('Account is not permitted', 403);
 
     const form = await c.req.parseBody();
     const csrf = typeof form.csrf === 'string' ? form.csrf : '';

@@ -30,7 +30,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: printf 'GOOGLE_CLIENT_ID=ci\nGOOGLE_CLIENT_SECRET=ci\nE2E_TEST_LOGIN=1\n' > worker/.dev.vars
+      - run: printf 'GOOGLE_CLIENT_ID=ci\nGOOGLE_CLIENT_SECRET=ci\nE2E_TEST_LOGIN=1\nALLOWED_EMAILS=e2e@example.com\n' > worker/.dev.vars
       # The Vite plugin does not auto-apply D1 migrations; seed the local state
       # it reads (app/.wrangler/state) before starting the dev server.
       - run: npx wrangler d1 migrations apply bodyatlas --local --config worker/wrangler.jsonc --persist-to app/.wrangler/state

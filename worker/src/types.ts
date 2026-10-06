@@ -6,6 +6,8 @@ export interface RateLimiter {
 }
 
 export type Bindings = {
+  ALLOWED_EMAILS?: string;
+  ENVIRONMENT?: 'development' | 'production';
   DB: D1Database;
   SESSIONS: KVNamespace;
   BODYATLAS_MCP: DurableObjectNamespace;

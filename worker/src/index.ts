@@ -19,6 +19,7 @@ import { mcpHandler } from './mcp/handler';
 import { oauthConsentRoutes } from './auth/oauth-consent';
 import { rateLimit } from './lib/rate-limit';
 import { isPublicSite, robotsTxt } from './lib/visibility';
+import { auditClassification, recordSecurityAudit, purgeSecurityAudit } from './lib/security-audit';
 
 export { BodyAtlasMCP };
 
@@ -39,6 +40,14 @@ export const apiApp = new Hono<AppEnv>()
   .route('/account', accountRoutes);
 
 const app = new Hono<AppEnv>();
+
+app.use('*', async (c, next) => {
+  await next();
+  const classification = auditClassification(c.req.path, c.req.method);
+  if (classification) await recordSecurityAudit(c.env.DB, {
+    actorId: c.get('userId') ?? null, ...classification, status: c.res.status,
+  });
+});
 
 // Add noindex to all worker-produced responses while the site is hidden.
 app.use('*', async (c, next) => {
@@ -61,8 +70,8 @@ app.notFound((c) =>
   c.json({ error: { code: 'not_found', message: 'Not found' } }, 404),
 );
 
-app.onError((err, c) => {
-  console.error('unhandled error', err);
+app.onError((_err, c) => {
+  console.error({ event: 'unhandled_worker_error' });
   return c.json(
     { error: { code: 'internal', message: 'Internal server error' } },
     500,
@@ -77,7 +86,7 @@ app.route('/', oauthConsentRoutes);
 
 export type AppType = typeof apiApp;
 
-export default new OAuthProvider<Bindings>({
+const oauth = new OAuthProvider<Bindings>({
   apiRoute: '/mcp',
   apiHandler: mcpHandler as ExportedHandler<Bindings> & Pick<Required<ExportedHandler<Bindings>>, 'fetch'>,
   // Hono app handles the SPA, /api, /auth, and the /authorize consent UI.
@@ -87,3 +96,10 @@ export default new OAuthProvider<Bindings>({
   clientRegistrationEndpoint: '/register',
   scopesSupported: ['mcp'],
 });
+
+export default {
+  fetch: oauth.fetch.bind(oauth),
+  scheduled: (_controller: ScheduledController, env: Bindings, ctx: ExecutionContext) => {
+    ctx.waitUntil(purgeSecurityAudit(env.DB));
+  },
+} satisfies ExportedHandler<Bindings>;
