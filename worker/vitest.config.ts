@@ -20,6 +20,7 @@ export default defineConfig({
             AI_KEY_SECRET: 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
             // Explicitly absent so the gate test works regardless of .dev.vars
             E2E_TEST_LOGIN: '',
+            ENVIRONMENT: 'development',
           },
         },
       };

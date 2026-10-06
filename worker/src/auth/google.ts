@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
+import { isAllowedEmail, isAllowedUser } from './private-access';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '../db';
 import type { AppEnv } from '../types';
 import { SESSION_COOKIE } from './middleware';
-import { createSession, deleteSession, SESSION_TTL_SECONDS } from './session';
+import { createSession, deleteSession, getSessionUserId, SESSION_TTL_SECONDS } from './session';
 
 const OAUTH_COOKIE = 'ba_oauth';
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -143,6 +144,9 @@ export const authRoutes = new Hono<AppEnv>()
       name?: string;
     };
 
+    if (!isAllowedEmail(c.env, claims.email)) {
+      return c.json({ error: { code: 'forbidden', message: 'Account is not permitted' } }, 403);
+    }
     const db = getDb(c.env.DB);
     const existing = await db.query.users.findFirst({
       where: eq(schema.users.googleSub, claims.sub),
@@ -164,6 +168,7 @@ export const authRoutes = new Hono<AppEnv>()
     }
 
     const token = await createSession(c.env.SESSIONS, userId);
+    c.set('userId', userId);
 
     if (stored.native) {
       // Native shell: the OAuth dance ran in ASWebAuthenticationSession, whose
@@ -203,6 +208,13 @@ export const authRoutes = new Hono<AppEnv>()
       return c.json(badRequest('Invalid code'), 400);
     }
     await c.env.SESSIONS.delete(`native_auth:${code}`);
+
+    const userId = await getSessionUserId(c.env.SESSIONS, token);
+    if (!userId || !await isAllowedUser(c.env, userId)) {
+      await deleteSession(c.env.SESSIONS, token);
+      return c.json({ error: { code: 'forbidden', message: 'Account is not permitted' } }, 403);
+    }
+    c.set('userId', userId);
 
     setCookie(c, SESSION_COOKIE, token, {
       httpOnly: true,

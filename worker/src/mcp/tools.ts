@@ -17,6 +17,9 @@ import {
 import { likeContains } from '../lib/sql';
 import { dayWindowFor, strengthSeries } from '../lib/stats';
 import { matchExercise, type ExerciseCandidate } from './match';
+import type { Bindings } from '../types';
+import { isAllowedUser } from '../auth/private-access';
+import { recordSecurityAudit } from '../lib/security-audit';
 
 // ---------------------------------------------------------------------------
 // ToolError
@@ -677,7 +680,24 @@ export function registerTools(
   server: McpServer,
   db: D1Database,
   getUserId: () => string,
+  bindings: Bindings,
 ): void {
+  const privateTool = async <T>(operation: string, fn: () => Promise<T>) => {
+    const actorId = getUserId();
+    const audit = (status: number) => recordSecurityAudit(db, { actorId, action: 'mcp_tool', category: 'mcp', operation, status });
+    if (!await isAllowedUser(bindings, actorId)) {
+      await audit(403);
+      return toolError('Account is not permitted');
+    }
+    try {
+      const result = await runTool(fn);
+      await audit('isError' in result ? 400 : 200);
+      return result;
+    } catch (error) {
+      await audit(500);
+      throw error;
+    }
+  };
   server.registerTool(
     'log_meal',
     {
@@ -685,7 +705,7 @@ export function registerTools(
         'Log a meal. Provide name and optionally eatenAt (ISO datetime with timezone), calories (kcal), proteinG/fatG/carbsG (grams).',
       inputSchema: mealToolInput,
     },
-    async (input) => runTool(() => logMeal(db, getUserId(), input)),
+    async (input) => privateTool('log_meal', () => logMeal(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -695,7 +715,7 @@ export function registerTools(
         'Log a body measurement. Provide weightKg (kg) and/or bodyFatPct (%). measuredAt is optional ISO datetime with timezone.',
       inputSchema: weightToolInput,
     },
-    async (input) => runTool(() => logWeight(db, getUserId(), input)),
+    async (input) => privateTool('log_weight', () => logWeight(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -705,7 +725,7 @@ export function registerTools(
         'Log a sleep record. bedAt and wokeAt are ISO datetimes with timezone. quality is 1 (worst)–5 (best).',
       inputSchema: sleepToolInput,
     },
-    async (input) => runTool(() => logSleep(db, getUserId(), input)),
+    async (input) => privateTool('log_sleep', () => logSleep(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -715,7 +735,7 @@ export function registerTools(
         'Log a completed workout with exercises and sets. Exercise names are matched case-insensitively against the catalog (English or Japanese); a partial name works if it identifies exactly one exercise. If a name is not found, call search_exercises to find the right one, then create_exercise if it is genuinely missing — do not give up. Sets need at least reps, durationSec, or distanceM. weightKg in kg; RPE 1–10 in 0.5 steps.',
       inputSchema: workoutToolInput,
     },
-    async (input) => runTool(() => logWorkout(db, getUserId(), input)),
+    async (input) => privateTool('log_workout', () => logWorkout(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -725,7 +745,7 @@ export function registerTools(
         'Search the exercise catalog (seeded exercises plus the user’s custom ones). query matches a substring of the English or Japanese name; omit it to browse everything. Use this before log_workout when unsure of a name.',
       inputSchema: searchExercisesToolInput,
     },
-    async (input) => runTool(() => searchExercises(db, getUserId(), input)),
+    async (input) => privateTool('search_exercises', () => searchExercises(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -735,7 +755,7 @@ export function registerTools(
         'Add a custom exercise to the user’s catalog so it can be logged. Call search_exercises first and only create when nothing matches. Classify it accurately — muscleGroup drives the user’s training-volume analytics.',
       inputSchema: createExerciseToolInput,
     },
-    async (input) => runTool(() => createExercise(db, getUserId(), input)),
+    async (input) => privateTool('create_exercise', () => createExercise(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -744,7 +764,7 @@ export function registerTools(
       description: 'Get recent workout summaries, newest first. limit: 1–20 (default 5).',
       inputSchema: recentWorkoutsToolInput,
     },
-    async (input) => runTool(() => getRecentWorkouts(db, getUserId(), input)),
+    async (input) => privateTool('get_recent_workouts', () => getRecentWorkouts(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -754,7 +774,7 @@ export function registerTools(
         'Get trend data. kind: strength (requires exerciseName) | volume | nutrition-body | sleep. days: lookback window (default 84).',
       inputSchema: trendsToolInput,
     },
-    async (input) => runTool(() => getTrends(db, getUserId(), input)),
+    async (input) => privateTool('get_trends', () => getTrends(db, getUserId(), input)),
   );
 
   server.registerTool(
@@ -764,6 +784,6 @@ export function registerTools(
         "Get today's summary: nutrition totals vs targets, workout status (active/done/rest), last sleep, and latest weight. Today is computed using the user's stored timezone.",
       inputSchema: todayToolInput,
     },
-    async (input) => runTool(() => getToday(db, getUserId())),
+    async (input) => privateTool('get_today', () => getToday(db, getUserId())),
   );
 }

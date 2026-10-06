@@ -1,5 +1,6 @@
 import { BodyAtlasMCP } from './server';
 import type { Bindings } from '../types';
+import { isAllowedUser } from '../auth/private-access';
 
 const base = BodyAtlasMCP.serve('/mcp', { binding: 'BODYATLAS_MCP' });
 
@@ -12,10 +13,13 @@ const base = BodyAtlasMCP.serve('/mcp', { binding: 'BODYATLAS_MCP' });
 export const mcpHandler = {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
     if (request.method !== 'OPTIONS') {
+      const props = (ctx as ExecutionContext & { props?: { userId?: string } }).props;
+      if (!props?.userId || !await isAllowedUser(env, props.userId)) {
+        return Response.json({ error: { code: 'forbidden', message: 'Account is not permitted' } }, { status: 403 });
+      }
       const limiter = env.RL_MCP;
       if (limiter) {
-        const props = (ctx as ExecutionContext & { props?: { userId?: string } }).props;
-        const key = props?.userId ?? request.headers.get('Authorization') ?? 'anon';
+        const key = props.userId!;
         const { success } = await limiter.limit({ key });
         if (!success) {
           return Response.json(

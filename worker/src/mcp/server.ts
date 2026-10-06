@@ -14,6 +14,6 @@ export class BodyAtlasMCP extends McpAgent<Cloudflare.Env, Record<string, never>
 
   async init(): Promise<void> {
     const bindings = this.env as unknown as Bindings;
-    registerTools(this.server, bindings.DB, () => this.props!.userId);
+    registerTools(this.server, bindings.DB, () => this.props!.userId, bindings);
   }
 }
