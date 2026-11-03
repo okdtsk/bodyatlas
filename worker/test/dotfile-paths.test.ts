@@ -11,6 +11,10 @@ describe('dotfile paths', () => {
     expect(wranglerConfig).toContain(`"${pattern}"`);
   });
 
+  it.each(['!/node_modules/*', '!/@fs/*'])('leaves Vite dev path %s to static assets', (pattern) => {
+    expect(wranglerConfig).toContain(`"${pattern}"`);
+  });
+
   it.each(['/.env', '/.env.production', '/.git/config', '/.aws/credentials', '/app/.env', '/js../.git/config'])(
     'returns 404 from the Worker for %s',
     async (path) => {

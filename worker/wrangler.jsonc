@@ -21,7 +21,10 @@
       "/register",
       "/robots.txt",
       "/.*",
-      "/*/.*"
+      "/*/.*",
+      // Vite dev serves these from paths with dot segments, such as node_modules/.vite.
+      "!/node_modules/*",
+      "!/@fs/*"
     ]
   },
   "durable_objects": {
