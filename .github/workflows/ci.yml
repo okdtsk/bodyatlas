@@ -20,7 +20,8 @@ jobs:
       - run: npm run build
 
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install browsers on the Ubuntu 26.04 ubuntu-latest image.
+    runs-on: ubuntu-24.04
     needs: ci
     steps:
       - uses: actions/checkout@v4
