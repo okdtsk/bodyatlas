@@ -19,10 +19,9 @@
       "/authorize",
       "/token",
       "/register",
-      "/.well-known/oauth-authorization-server",
-      "/.well-known/oauth-protected-resource",
-      "/.well-known/oauth-protected-resource/*",
-      "/robots.txt"
+      "/robots.txt",
+      "/.*",
+      "/*/.*"
     ]
   },
   "durable_objects": {
